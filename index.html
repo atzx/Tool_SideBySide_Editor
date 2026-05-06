@@ -1,0 +1,1740 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SideBySide Editor</title>
+<style>
+:root {
+  --bg: #1a1a2e;
+  --panel-bg: #16213e;
+  --panel-bg-secondary: #1a1a35;
+  --text: #e0e0e0;
+  --text-dim: #888;
+  --input-bg: #0f3460;
+  --input-border: #1a4a7a;
+  --accent: #e94560;
+  --accent-hover: #ff6b81;
+  --toolbar-bg: #0f3460;
+  --divider-bg: #2a2a5a;
+  --divider-hover: #e94560;
+  --border: #2a2a5a;
+  --shadow: rgba(0,0,0,0.3);
+  --dropzone-bg: rgba(15,52,96,0.5);
+  --dropzone-border: #1a4a7a;
+  --btn-bg: #0f3460;
+  --btn-hover: #1a4a7a;
+  --btn-active: #e94560;
+  --radius: 8px;
+  --font-main: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+[data-theme="light"] {
+  --bg: #e8e8ec;
+  --panel-bg: #ffffff;
+  --panel-bg-secondary: #f0f0f5;
+  --text: #222222;
+  --text-dim: #888;
+  --input-bg: #f0f0f5;
+  --input-border: #ddd;
+  --toolbar-bg: #f5f5f5;
+  --divider-bg: #ccc;
+  --divider-hover: #e94560;
+  --border: #ddd;
+  --shadow: rgba(0,0,0,0.1);
+  --dropzone-bg: rgba(240,240,245,0.8);
+  --dropzone-border: #ccc;
+  --btn-bg: #e8e8ec;
+  --btn-hover: #ddd;
+  --btn-active: #e94560;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body { height: 100%; overflow: hidden; }
+
+body {
+  font-family: var(--font-main);
+  background: var(--bg);
+  color: var(--text);
+  display: flex;
+  flex-direction: column;
+  user-select: none;
+  transition: background .3s, color .3s;
+}
+
+/* ─── TOP BAR ─── */
+#topbar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 16px;
+  background: var(--panel-bg);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  gap: 12px;
+  z-index: 10;
+}
+#topbar h1 {
+  font-size: 16px; font-weight: 700;
+  background: linear-gradient(135deg, var(--accent), #ff8a5c);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  white-space: nowrap;
+}
+.topbar-actions {
+  display: flex; align-items: center; gap: 6px;
+}
+.topbar-actions button {
+  background: var(--btn-bg);
+  color: var(--text);
+  border: 1px solid var(--input-border);
+  border-radius: 6px;
+  padding: 6px 10px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background .15s;
+  display: flex; align-items: center; justify-content: center;
+}
+.topbar-actions button:hover { background: var(--btn-hover); }
+.topbar-actions button:active { background: var(--accent); }
+
+/* ─── WORKSPACE ─── */
+#workspace {
+  flex: 1; display: flex; overflow: hidden;
+  position: relative;
+}
+
+/* ─── PANELS ─── */
+.panel {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+}
+#leftPanel {
+  width: 50%;
+  background: var(--panel-bg);
+  border-right: 1px solid var(--border);
+  transition: background .3s;
+}
+#rightPanel {
+  flex: 1;
+  background: var(--panel-bg-secondary);
+  transition: background .3s;
+}
+
+/* ─── DIVIDER ─── */
+#divider {
+  width: 6px;
+  cursor: col-resize;
+  background: var(--divider-bg);
+  flex-shrink: 0;
+  position: relative;
+  z-index: 5;
+  transition: background .15s;
+}
+#divider:hover, #divider.active {
+  background: var(--divider-hover);
+}
+#divider::after {
+  content: '';
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 2px; height: 32px;
+  background: rgba(255,255,255,0.15);
+  border-radius: 1px;
+}
+
+/* ─── DROP ZONE ─── */
+#dropZone {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+#dropZone.has-image { cursor: default; }
+#dropZone.dragover {
+  background: var(--dropzone-bg);
+}
+#dropZone.has-image .drop-content { display: none; }
+
+.drop-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  color: var(--text-dim);
+  text-align: center;
+  padding: 24px;
+}
+.drop-content .drop-icon {
+  font-size: 48px;
+  opacity: 0.4;
+}
+.drop-content p { font-size: 14px; line-height: 1.4; }
+.drop-content .sub { font-size: 12px; opacity: 0.6; }
+#attachBtn {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  padding: 8px 20px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: opacity .15s;
+}
+#attachBtn:hover { opacity: .85; }
+
+#imagePreview {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  display: none;
+  transition: transform .2s;
+}
+#dropZone.has-image #imagePreview { display: block; }
+
+.paste-hint {
+  position: absolute;
+  bottom: 8px; left: 50%;
+  transform: translateX(-50%);
+  font-size: 11px;
+  color: var(--text-dim);
+  opacity: 0;
+  transition: opacity .3s;
+  pointer-events: none;
+}
+#dropZone:hover .paste-hint { opacity: 0.6; }
+
+/* ─── IMAGE TOOLS ─── */
+#imageTools {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--toolbar-bg);
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+#imageTools label {
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--text-dim);
+}
+#imageTools input[type="range"] {
+  width: 80px;
+  accent-color: var(--accent);
+}
+#imageTools button {
+  background: var(--btn-bg);
+  color: var(--text);
+  border: 1px solid var(--input-border);
+  border-radius: 4px;
+  padding: 4px 8px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background .15s;
+}
+#imageTools button:hover { background: var(--btn-hover); }
+#zoomValue { font-size: 12px; color: var(--text-dim); min-width: 36px; text-align: center; }
+
+/* Fit/Fill switch */
+.fit-switch {
+  display: flex; align-items: center; gap: 6px;
+  margin-left: auto;
+}
+.fit-switch span { font-size: 12px; color: var(--text-dim); cursor: pointer; padding: 2px 6px; border-radius: 4px; transition: all .15s; }
+.fit-switch span.active { color: var(--text); background: var(--accent); }
+.rotate-group { display: flex; gap: 2px; }
+
+/* ─── TEXT TOOLBAR ─── */
+#toolbar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 8px;
+  background: var(--toolbar-bg);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+#toolbar button {
+  background: none;
+  color: var(--text);
+  border: 1px solid transparent;
+  border-radius: 4px;
+  padding: 4px 8px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all .15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 30px;
+  height: 30px;
+}
+#toolbar button:hover { background: var(--btn-bg); border-color: var(--input-border); }
+#toolbar button.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+#toolbar button.bold-btn { font-weight: 700; }
+#toolbar button.italic-btn { font-style: italic; }
+#toolbar button.underline-btn { text-decoration: underline; }
+
+.toolbar-sep {
+  width: 1px; height: 22px;
+  background: var(--border);
+  margin: 0 4px;
+  flex-shrink: 0;
+}
+
+/* Alignment icon buttons */
+.align-icon {
+  display: flex; flex-direction: column; gap: 2px;
+  width: 14px; height: 14px;
+  justify-content: center;
+}
+.align-icon span {
+  display: block; height: 2px;
+  background: currentColor;
+  border-radius: 1px;
+}
+.align-left span:nth-child(1) { width: 60%; }
+.align-left span:nth-child(2) { width: 80%; }
+.align-left span:nth-child(3) { width: 100%; }
+.align-center span:nth-child(1) { width: 80%; margin: 0 auto; }
+.align-center span:nth-child(2) { width: 60%; margin: 0 auto; }
+.align-center span:nth-child(3) { width: 80%; margin: 0 auto; }
+.align-right span:nth-child(1) { width: 100%; margin-left: auto; }
+.align-right span:nth-child(2) { width: 80%; margin-left: auto; }
+.align-right span:nth-child(3) { width: 60%; margin-left: auto; }
+
+#toolbar select {
+  background: var(--input-bg);
+  color: var(--text);
+  border: 1px solid var(--input-border);
+  border-radius: 4px;
+  padding: 3px 6px;
+  font-size: 12px;
+  max-width: 130px;
+  cursor: pointer;
+}
+#toolbar input[type="color"] {
+  width: 28px; height: 28px;
+  border: 1px solid var(--input-border);
+  border-radius: 4px;
+  cursor: pointer;
+  background: none;
+  padding: 1px;
+}
+#toolbar .range-label {
+  display: flex; align-items: center; gap: 4px;
+  font-size: 11px;
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+#toolbar .range-label input[type="range"] {
+  width: 60px;
+  accent-color: var(--accent);
+}
+.range-value { min-width: 24px; text-align: center; font-size: 11px; }
+
+/* ─── TEXT EDITOR ─── */
+#textEditor {
+  flex: 1;
+  padding: 24px;
+  outline: none;
+  overflow-y: auto;
+  font-size: 32px;
+  line-height: 1.5;
+  color: var(--text);
+  user-select: text;
+  cursor: text;
+  word-wrap: break-word;
+}
+#textEditor:empty::before {
+  content: attr(data-placeholder);
+  color: var(--text-dim);
+  opacity: 0.5;
+}
+#textEditor::-webkit-scrollbar { width: 6px; }
+#textEditor::-webkit-scrollbar-track { background: transparent; }
+#textEditor::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+/* ─── PREVIEW ─── */
+#textPreviewSection {
+  flex-shrink: 0;
+  min-height: 100px;
+  max-height: 40%;
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--border);
+  background: var(--panel-bg-secondary);
+  transition: background .3s;
+}
+#textPreviewHeader {
+  font-size: 11px;
+  color: var(--text-dim);
+  padding: 3px 12px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+#textPreviewContent {
+  display: block;
+  max-width: 100%;
+  object-fit: contain;
+  margin: 0 auto;
+}
+
+/* ─── BOTTOM BAR ─── */
+#bottombar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 16px;
+  background: var(--panel-bg);
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  z-index: 10;
+}
+#bottombar button {
+  background: var(--btn-bg);
+  color: var(--text);
+  border: 1px solid var(--input-border);
+  border-radius: 6px;
+  padding: 6px 12px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: all .15s;
+  white-space: nowrap;
+}
+#bottombar button:hover { background: var(--btn-hover); }
+#bottombar button.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+.ar-group {
+  display: flex; gap: 2px;
+  align-items: center;
+}
+.ar-group label { font-size: 11px; color: var(--text-dim); margin-right: 4px; }
+
+.custom-inputs {
+  display: flex; align-items: center; gap: 4px;
+}
+.custom-inputs input[type="number"] {
+  width: 56px;
+  background: var(--input-bg);
+  color: var(--text);
+  border: 1px solid var(--input-border);
+  border-radius: 4px;
+  padding: 4px 6px;
+  font-size: 12px;
+  text-align: center;
+}
+.custom-inputs span { font-size: 11px; color: var(--text-dim); }
+
+.export-group {
+  display: flex; gap: 4px;
+  margin-left: auto;
+}
+.export-group button.primary {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+.export-group button.primary:hover { opacity: .85; background: var(--accent); }
+
+#invertBtn {
+  font-size: 16px !important;
+}
+
+/* ─── CANVAS (hidden) ─── */
+#exportCanvas { display: none; }
+
+/* ─── RESPONSIVE ─── */
+@media (max-width: 768px) {
+  #topbar { padding: 6px 10px; }
+  #topbar h1 { font-size: 14px; }
+  #bottombar { padding: 6px 10px; gap: 6px; }
+  #toolbar { padding: 4px 6px; }
+  #toolbar select { max-width: 100px; }
+  #textEditor { padding: 12px; }
+  .custom-inputs input[type="number"] { width: 44px; }
+}
+
+/* ─── TOAST ─── */
+#toast {
+  position: fixed;
+  bottom: 60px; left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: var(--panel-bg);
+  color: var(--text);
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  font-size: 13px;
+  opacity: 0;
+  transition: all .3s;
+  pointer-events: none;
+  z-index: 100;
+  box-shadow: 0 4px 20px var(--shadow);
+}
+#toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<!-- ─── TOP BAR ─── -->
+<header id="topbar">
+  <h1>SideBySide Editor</h1>
+  <div class="topbar-actions">
+    <button id="undoBtn" title="Undo (Ctrl+Z)">↩</button>
+    <button id="redoBtn" title="Redo (Ctrl+Shift+Z)">↪</button>
+    <button id="themeToggle" title="Toggle Theme"></button>
+  </div>
+</header>
+
+<!-- ─── WORKSPACE ─── -->
+<main id="workspace">
+  <div id="leftPanel" class="panel">
+    <div id="dropZone">
+      <div class="drop-content">
+        <div class="drop-icon">🖼</div>
+        <p>Drop your image here</p>
+        <button id="attachBtn">Attach Image</button>
+        <p class="sub">or paste from clipboard (Ctrl+V)</p>
+      </div>
+      <img id="imagePreview" alt="Preview" crossorigin="anonymous">
+      <div class="paste-hint">Ctrl+V to paste image</div>
+    </div>
+    <div id="textPreviewSection">
+      <div id="textPreviewHeader">Preview</div>
+      <img id="textPreviewContent" alt="Preview">
+    </div>
+    <div id="imageTools">
+      <label>Zoom
+        <input type="range" id="zoomSlider" min="10" max="300" value="100">
+        <span id="zoomValue">100%</span>
+      </label>
+      <div class="rotate-group">
+        <button id="rotateCCW" title="Rotate 90° CCW">↺</button>
+        <button id="rotateCW" title="Rotate 90° CW">↻</button>
+        <button id="zoomResetBtn" title="Reset zoom to 100%">Set 100%</button>
+      </div>
+      <div class="fit-switch">
+        <span id="fitOpt" class="active">Fit</span>
+        <span id="fillOpt">Fill</span>
+      </div>
+    </div>
+  </div>
+
+  <div id="divider"></div>
+
+  <div id="rightPanel" class="panel" style="background:var(--panel-bg-secondary);">
+    <div id="toolbar">
+      <button id="boldBtn" class="bold-btn" title="Bold (Ctrl+B)">B</button>
+      <button id="italicBtn" class="italic-btn" title="Italic (Ctrl+I)">I</button>
+      <button id="underlineBtn" class="underline-btn" title="Underline (Ctrl+U)">U</button>
+      <div class="toolbar-sep"></div>
+      <button id="alignLeft" title="Align Left">
+        <span class="align-icon align-left"><span></span><span></span><span></span></span>
+      </button>
+      <button id="alignCenter" title="Align Center">
+        <span class="align-icon align-center"><span></span><span></span><span></span></span>
+      </button>
+      <button id="alignRight" title="Align Right">
+        <span class="align-icon align-right"><span></span><span></span><span></span></span>
+      </button>
+      <div class="toolbar-sep"></div>
+      <input type="color" id="textColorInput" title="Text Color" value="#ffffff">
+      <input type="color" id="bgColorInput" title="Panel Background" value="#1a1a35">
+      <div class="toolbar-sep"></div>
+      <select id="fontSelect" title="Font Family"></select>
+      <div class="toolbar-sep"></div>
+      <label class="range-label">Size
+        <input type="range" id="fontSizeSlider" min="12" max="120" value="32">
+        <span class="range-value" id="fontSizeVal">32</span>
+      </label>
+      <label class="range-label">Space
+        <input type="range" id="letterSpacingSlider" min="0" max="20" value="0" step="0.5">
+        <span class="range-value" id="letterSpacingVal">0</span>
+      </label>
+    </div>
+    <div id="textEditor" contenteditable="true" data-placeholder="Type your text here..." spellcheck="true"></div>
+  </div>
+
+</main>
+
+<!-- ─── BOTTOM BAR ─── -->
+<footer id="bottombar">
+  <div class="ar-group">
+    <label>Ratio</label>
+    <button id="imgHeightBtn" class="active" title="Match canvas height to image height">IMG-Height</button>
+    <button data-ar="1:1">1:1</button>
+    <button data-ar="16:9">16:9</button>
+    <button data-ar="21:9">21:9</button>
+    <button data-ar="4:5">4:5</button>
+    <button data-ar="custom">Custom</button>
+  </div>
+  <div class="custom-inputs" id="customArInputs" style="display:none">
+    <input type="number" id="customW" value="1920" min="100" max="8000">
+    <span>×</span>
+    <input type="number" id="customH" value="1080" min="100" max="8000">
+  </div>
+  <div class="toolbar-sep"></div>
+  <button id="invertBtn" title="Swap Panel Order">⇄ Swap</button>
+  <div class="toolbar-sep"></div>
+  <div class="export-group">
+    <button id="downloadWebP" class="primary">WebP</button>
+    <button id="downloadJPG">JPG</button>
+    <button id="downloadPNG">PNG</button>
+    <button id="copyImage">📋 Copy</button>
+  </div>
+</footer>
+
+<canvas id="exportCanvas"></canvas>
+<div id="toast"></div>
+
+<script>
+(function() {
+'use strict';
+
+/* ═══════════════════════════════════════
+   FONTS
+   ═══════════════════════════════════════ */
+const FONTS = [
+  'Inter', 'Roboto', 'Open Sans', 'Lato', 'Montserrat',
+  'Poppins', 'Noto Sans', 'Ubuntu', 'Raleway', 'Playfair Display',
+  'Merriweather', 'Source Sans Pro', 'Oswald', 'Lobster', 'Pacifico',
+  'Dancing Script', 'Bebas Neue', 'Fira Sans', 'Quicksand', 'Work Sans',
+  'Nunito', 'Rubik', 'Josefin Sans', 'Caveat', 'Comfortaa'
+];
+
+/* ═══════════════════════════════════════
+   STATE
+   ═══════════════════════════════════════ */
+const state = {
+  imageDataUrl: null,
+  zoom: 100,
+  rotation: 0,
+  fitFill: 'fit',        // 'fit' | 'fill'
+  textHtml: '',
+  fontFamily: 'Inter',
+  fontSize: 32,
+  letterSpacing: 0,
+  textColor: '#ffffff',
+  bgColor: '#1a1a35',
+  textAlign: 'left',
+  aspectRatio: '1:1',
+  customW: 1920,
+  customH: 1080,
+  panelOrder: 'normal',  // 'normal' | 'inverted'
+  leftPanelPct: 50,
+  canvasScale: 2,
+  imgHeightMode: true,
+  theme: 'dark'
+};
+
+/* ═══════════════════════════════════════
+   UNDO / REDO
+   ═══════════════════════════════════════ */
+const undoStack = [];
+const redoStack = [];
+const MAX_UNDO = 50;
+
+function pushSnapshot() {
+  const snap = {};
+  for (const k in state) {
+    if (k === 'imageDataUrl') {
+      snap.imageDataUrl = state.imageDataUrl;
+    } else {
+      snap[k] = state[k];
+    }
+  }
+  undoStack.push(snap);
+  redoStack.length = 0;
+  if (undoStack.length > MAX_UNDO) undoStack.shift();
+  updateUndoButtons();
+}
+
+function undo() {
+  if (undoStack.length < 2) return;
+  const current = undoStack.pop();
+  redoStack.push(current);
+  const prev = undoStack[undoStack.length - 1];
+  applySnapshot(prev);
+  updateUndoButtons();
+  scheduleRender();
+}
+
+function redo() {
+  if (redoStack.length === 0) return;
+  const next = redoStack.pop();
+  undoStack.push(next);
+  applySnapshot(next);
+  updateUndoButtons();
+  scheduleRender();
+}
+
+function applySnapshot(snap) {
+  for (const k in snap) {
+    state[k] = snap[k];
+  }
+  syncUIFromState();
+}
+
+function updateUndoButtons() {
+  document.getElementById('undoBtn').style.opacity = undoStack.length < 2 ? '0.3' : '1';
+  document.getElementById('redoBtn').style.opacity = redoStack.length === 0 ? '0.3' : '1';
+}
+
+/* ═══════════════════════════════════════
+   THEME
+   ═══════════════════════════════════════ */
+function setTheme(theme) {
+  state.theme = theme;
+  document.documentElement.setAttribute('data-theme', theme);
+  document.getElementById('themeToggle').textContent = theme === 'dark' ? '🌙' : '☀️';
+  localStorage.setItem('sbs-theme', theme);
+}
+
+/* ═══════════════════════════════════════
+   DOM REFS
+   ═══════════════════════════════════════ */
+const $ = id => document.getElementById(id);
+const dropZone = $('dropZone');
+const imagePreview = $('imagePreview');
+const attachBtn = $('attachBtn');
+const zoomSlider = $('zoomSlider');
+const zoomValue = $('zoomValue');
+const rotateCCW = $('rotateCCW');
+const rotateCW = $('rotateCW');
+const zoomResetBtn = $('zoomResetBtn');
+const fitOpt = $('fitOpt');
+const fillOpt = $('fillOpt');
+const textEditor = $('textEditor');
+const boldBtn = $('boldBtn');
+const italicBtn = $('italicBtn');
+const underlineBtn = $('underlineBtn');
+const alignLeft = $('alignLeft');
+const alignCenter = $('alignCenter');
+const alignRight = $('alignRight');
+const textColorInput = $('textColorInput');
+const bgColorInput = $('bgColorInput');
+const fontSelect = $('fontSelect');
+const fontSizeSlider = $('fontSizeSlider');
+const fontSizeVal = $('fontSizeVal');
+const letterSpacingSlider = $('letterSpacingSlider');
+const letterSpacingVal = $('letterSpacingVal');
+const divider = $('divider');
+const invertBtn = $('invertBtn');
+const canvas = $('exportCanvas');
+const ctx = canvas.getContext('2d');
+const toast = $('toast');
+const leftPanel = $('leftPanel');
+const rightPanel = $('rightPanel');
+const workspace = $('workspace');
+
+/* ═══════════════════════════════════════
+   INIT
+   ═══════════════════════════════════════ */
+let initialized = false;
+
+function init() {
+  if (initialized) return;
+  initialized = true;
+  // Load theme
+  const savedTheme = localStorage.getItem('sbs-theme') || 'dark';
+  setTheme(savedTheme);
+
+  // Populate font select
+  FONTS.forEach(f => {
+    const opt = document.createElement('option');
+    opt.value = f;
+    opt.textContent = f;
+    if (f === state.fontFamily) opt.selected = true;
+    fontSelect.appendChild(opt);
+  });
+
+  // Initial snapshot
+  pushSnapshot();
+
+  // Load font
+  loadGoogleFont(state.fontFamily);
+
+  // Sync UI
+  syncUIFromState();
+
+  // Bind events
+  bindEvents();
+
+  // Initial render
+  scheduleRender();
+  // Center text after layout settles
+  setTimeout(adjustTextVerticalCenter, 50);
+}
+
+/* ═══════════════════════════════════════
+   FONT LOADING
+   ═══════════════════════════════════════ */
+function loadGoogleFont(family) {
+  const linkId = 'sbs-font-link';
+  const existing = document.getElementById(linkId);
+  if (existing) existing.remove();
+  const link = document.createElement('link');
+  link.id = linkId;
+  link.rel = 'stylesheet';
+  link.href = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(family)}:ital,wght@0,400;0,700;1,400;1,700&display=swap`;
+  document.head.appendChild(link);
+}
+
+/* ═══════════════════════════════════════
+   SYNC UI ← STATE
+   ═══════════════════════════════════════ */
+function syncUIFromState() {
+  // Image
+  if (state.imageDataUrl) {
+    imagePreview.src = state.imageDataUrl;
+    dropZone.classList.add('has-image');
+  } else {
+    imagePreview.src = '';
+    dropZone.classList.remove('has-image');
+  }
+  zoomSlider.value = state.zoom;
+  zoomValue.textContent = state.zoom + '%';
+  if (state.fitFill === 'fit') { fitOpt.classList.add('active'); fillOpt.classList.remove('active'); }
+  else { fillOpt.classList.add('active'); fitOpt.classList.remove('active'); }
+
+  // Text
+  textEditor.innerHTML = state.textHtml;
+  textEditor.style.fontFamily = `"${state.fontFamily}", sans-serif`;
+  applyFontSize(state.fontSize);
+  textEditor.style.letterSpacing = state.letterSpacing + 'px';
+  textEditor.style.textAlign = state.textAlign;
+  textColorInput.value = state.textColor;
+  bgColorInput.value = state.bgColor;
+  rightPanel.style.background = state.bgColor;
+  fontSelect.value = state.fontFamily;
+  fontSizeSlider.value = state.fontSize;
+  fontSizeVal.textContent = state.fontSize;
+  letterSpacingSlider.value = state.letterSpacing;
+  letterSpacingVal.textContent = state.letterSpacing;
+
+  // Alignment buttons
+  document.querySelectorAll('#toolbar button[title*="Align"]').forEach(b => b.classList.remove('active'));
+  if (state.textAlign === 'left') alignLeft.classList.add('active');
+  else if (state.textAlign === 'center') alignCenter.classList.add('active');
+  else if (state.textAlign === 'right') alignRight.classList.add('active');
+
+  // IMG-Height button
+  $('imgHeightBtn').classList.toggle('active', state.imgHeightMode);
+
+  // Aspect ratio (only show active when IMG-Height is off)
+  document.querySelectorAll('.ar-group button[data-ar]').forEach(b => b.classList.remove('active'));
+  if (!state.imgHeightMode) {
+    const arBtn = document.querySelector(`.ar-group button[data-ar="${state.aspectRatio}"]`);
+    if (arBtn) arBtn.classList.add('active');
+  }
+  $('customArInputs').style.display = state.aspectRatio === 'custom' ? 'flex' : 'none';
+  $('customW').value = state.customW;
+  $('customH').value = state.customH;
+
+  // Panel order
+  if (state.panelOrder === 'inverted') {
+    workspace.style.flexDirection = 'row-reverse';
+  } else {
+    workspace.style.flexDirection = 'row';
+  }
+
+  // Left panel width
+  leftPanel.style.width = state.leftPanelPct + '%';
+
+  // Re-center text vertically on next frame
+  requestAnimationFrame(() => adjustTextVerticalCenter());
+}
+
+function adjustTextVerticalCenter() {
+  const editor = textEditor;
+  const defaultPad = 24;
+  // Reset to defaults first
+  editor.style.paddingTop = '';
+  editor.style.paddingBottom = '';
+  const scrollH = editor.scrollHeight;
+  const clientH = editor.clientHeight;
+  if (scrollH <= clientH) {
+    const extra = Math.floor((clientH - scrollH) / 2);
+    editor.style.paddingTop = (defaultPad + Math.max(0, extra)) + 'px';
+    editor.style.paddingBottom = (defaultPad + Math.max(0, extra)) + 'px';
+  } else {
+    editor.style.paddingTop = defaultPad + 'px';
+    editor.style.paddingBottom = defaultPad + 'px';
+  }
+}
+
+function applyFontSize(size) {
+  textEditor.style.fontSize = size + 'px';
+  // Also set on all direct child elements (created by execCommand like <b>, <i>, <font>)
+  // to ensure font-size is applied even if CSS inheritance is blocked.
+  for (const child of textEditor.children) {
+    if (child.nodeType === Node.ELEMENT_NODE) {
+      child.style.fontSize = size + 'px';
+    }
+  }
+}
+
+function updatePreviewImage() {
+  const preview = document.getElementById('textPreviewContent');
+  const section = document.getElementById('textPreviewSection');
+  const header = document.getElementById('textPreviewHeader');
+  preview.src = canvas.toDataURL('image/png');
+  section.style.background = state.bgColor;
+
+  // When IMG-Height is active, match preview height to the displayed image height
+  if (state.imgHeightMode && state.imageDataUrl && imagePreview.naturalHeight > 0) {
+    const displayedRect = imagePreview.getBoundingClientRect();
+    const displayedH = displayedRect.height;
+    const maxH = Math.min(imagePreview.naturalHeight, 400);
+    section.style.maxHeight = maxH + 'px';
+    if (displayedH > 1 && canvas.height > 0) {
+      const ar = canvas.width / canvas.height;
+      const headerH = header.offsetHeight || 18;
+      let previewH = Math.max(40, Math.min(displayedH, maxH));
+      let previewW = previewH * ar;
+      // Cap width to section, re-calc height if needed
+      const sectionW = section.clientWidth;
+      if (previewW > sectionW) {
+        previewW = sectionW;
+        previewH = previewW / ar;
+      }
+      preview.style.width = previewW + 'px';
+      preview.style.height = previewH + 'px';
+      section.style.height = (previewH + headerH) + 'px';
+
+      // One-frame re-stabilize after layout settles (section height change affects drop zone)
+      const stableH = previewH;
+      const stableAr = ar;
+      const stableHeaderH = headerH;
+      requestAnimationFrame(function restabilize() {
+        const newH = imagePreview.getBoundingClientRect().height;
+        if (newH > 1 && Math.abs(newH - stableH) > 1) {
+          let w = newH * stableAr;
+          const sw = section.clientWidth;
+          if (w > sw) { w = sw; }
+          preview.style.width = w + 'px';
+          preview.style.height = newH + 'px';
+          section.style.height = (newH + stableHeaderH) + 'px';
+        }
+      });
+      return;
+    }
+    const fallbackH = Math.min(imagePreview.naturalHeight, 300);
+    preview.style.width = '100%';
+    preview.style.height = fallbackH + 'px';
+    section.style.height = fallbackH + 'px';
+    return;
+  }
+  // Default sizing
+  preview.style.width = section.clientWidth + 'px';
+  preview.style.height = '180px';
+  section.style.maxHeight = '40%';
+  section.style.height = '180px';
+}
+
+/* ═══════════════════════════════════════
+   EVENTS
+   ═══════════════════════════════════════ */
+function bindEvents() {
+  /* ─── Theme ─── */
+  $('themeToggle').addEventListener('click', () => {
+    setTheme(state.theme === 'dark' ? 'light' : 'dark');
+    scheduleRender();
+  });
+
+  /* ─── Undo / Redo ─── */
+  $('undoBtn').addEventListener('click', undo);
+  $('redoBtn').addEventListener('click', redo);
+  document.addEventListener('keydown', e => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+      e.preventDefault(); undo();
+    }
+    if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
+      e.preventDefault(); redo();
+    }
+  });
+
+  /* ─── Drop Zone ─── */
+  dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+  dropZone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropZone.classList.remove('dragover');
+    const file = e.dataTransfer.files[0];
+    if (file && file.type.startsWith('image/')) loadImageFile(file);
+  });
+
+  attachBtn.addEventListener('click', () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = () => { if (input.files[0]) loadImageFile(input.files[0]); };
+    input.click();
+  });
+
+  document.addEventListener('paste', e => {
+    const items = e.clipboardData.items;
+    for (const item of items) {
+      if (item.type.startsWith('image/')) {
+        const file = item.getAsFile();
+        if (file) { loadImageFile(file); break; }
+      }
+    }
+  });
+
+  /* ─── Image Tools ─── */
+  zoomSlider.addEventListener('input', () => {
+    state.zoom = parseFloat(zoomSlider.value);
+    zoomValue.textContent = state.zoom + '%';
+    updateImageTransform();
+    debouncedSnapshot();
+    scheduleRender();
+  });
+
+  rotateCCW.addEventListener('click', () => {
+    state.rotation = (state.rotation - 90) % 360;
+    updateImageTransform();
+    snapshotAndRender();
+  });
+  rotateCW.addEventListener('click', () => {
+    state.rotation = (state.rotation + 90) % 360;
+    updateImageTransform();
+    snapshotAndRender();
+  });
+  zoomResetBtn.addEventListener('click', () => {
+    state.zoom = 100;
+    zoomSlider.value = 100;
+    zoomValue.textContent = '100%';
+    updateImageTransform();
+    snapshotAndRender();
+  });
+
+  fitOpt.addEventListener('click', () => {
+    state.fitFill = 'fit';
+    fitOpt.classList.add('active'); fillOpt.classList.remove('active');
+    updateImageTransform();
+    snapshotAndRender();
+  });
+  fillOpt.addEventListener('click', () => {
+    state.fitFill = 'fill';
+    fillOpt.classList.add('active'); fitOpt.classList.remove('active');
+    updateImageTransform();
+    snapshotAndRender();
+  });
+
+  /* ─── Text Formatting ─── */
+  boldBtn.addEventListener('click', () => exec('bold'));
+  italicBtn.addEventListener('click', () => exec('italic'));
+  underlineBtn.addEventListener('click', () => exec('underline'));
+
+  alignLeft.addEventListener('click', () => { exec('justifyLeft'); state.textAlign = 'left'; highlightAlign(); snapshotAndRender(); });
+  alignCenter.addEventListener('click', () => { exec('justifyCenter'); state.textAlign = 'center'; highlightAlign(); snapshotAndRender(); });
+  alignRight.addEventListener('click', () => { exec('justifyRight'); state.textAlign = 'right'; highlightAlign(); snapshotAndRender(); });
+
+  textColorInput.addEventListener('input', () => {
+    state.textColor = textColorInput.value;
+    exec('foreColor', false, state.textColor);
+    snapshotAndRender();
+  });
+  bgColorInput.addEventListener('input', () => {
+    state.bgColor = bgColorInput.value;
+    rightPanel.style.background = state.bgColor;
+    snapshotAndRender();
+  });
+
+  fontSelect.addEventListener('change', () => {
+    state.fontFamily = fontSelect.value;
+    loadGoogleFont(state.fontFamily);
+    textEditor.style.fontFamily = `"${state.fontFamily}", sans-serif`;
+    snapshotAndRender();
+  });
+
+  fontSizeSlider.addEventListener('input', () => {
+    state.fontSize = parseFloat(fontSizeSlider.value);
+    fontSizeVal.textContent = state.fontSize;
+    applyFontSize(state.fontSize);
+    adjustTextVerticalCenter();
+    debouncedSnapshot();
+    scheduleRender();
+  });
+  fontSizeSlider.addEventListener('change', () => { pushSnapshot(); updateUndoButtons(); });
+
+  letterSpacingSlider.addEventListener('input', () => {
+    state.letterSpacing = parseFloat(letterSpacingSlider.value);
+    letterSpacingVal.textContent = state.letterSpacing;
+    textEditor.style.letterSpacing = state.letterSpacing + 'px';
+    debouncedSnapshot();
+    scheduleRender();
+  });
+  letterSpacingSlider.addEventListener('change', () => { pushSnapshot(); updateUndoButtons(); });
+
+  textEditor.addEventListener('input', () => {
+    state.textHtml = textEditor.innerHTML;
+    adjustTextVerticalCenter();
+    debouncedSnapshot();
+    scheduleRender();
+  });
+
+  /* ─── Keyboard shortcuts for formatting ─── */
+  textEditor.addEventListener('keydown', e => {
+    if ((e.ctrlKey || e.metaKey) && ['b','i','u'].includes(e.key)) {
+      e.stopPropagation();
+    }
+  });
+
+  /* ─── Divider ─── */
+  divider.addEventListener('mousedown', startDividerDrag);
+
+  /* ─── Invert Panels ─── */
+  invertBtn.addEventListener('click', () => {
+    state.panelOrder = state.panelOrder === 'normal' ? 'inverted' : 'normal';
+    workspace.style.flexDirection = state.panelOrder === 'inverted' ? 'row-reverse' : 'row';
+    snapshotAndRender();
+  });
+
+  /* ─── Aspect Ratio ─── */
+  document.querySelectorAll('.ar-group button[data-ar]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.ar-group button[data-ar]').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      state.aspectRatio = btn.dataset.ar;
+      state.imgHeightMode = false;
+      document.getElementById('imgHeightBtn').classList.remove('active');
+      $('customArInputs').style.display = state.aspectRatio === 'custom' ? 'flex' : 'none';
+      snapshotAndRender();
+    });
+  });
+
+  $('customW').addEventListener('change', () => {
+    state.customW = parseInt($('customW').value) || 1920;
+    snapshotAndRender();
+  });
+  $('customH').addEventListener('change', () => {
+    state.customH = parseInt($('customH').value) || 1080;
+    snapshotAndRender();
+  });
+
+  /* ─── IMG-Height Toggle ─── */
+  $('imgHeightBtn').addEventListener('click', () => {
+    state.imgHeightMode = !state.imgHeightMode;
+    $('imgHeightBtn').classList.toggle('active', state.imgHeightMode);
+    if (state.imgHeightMode) {
+      document.querySelectorAll('.ar-group button[data-ar]').forEach(b => b.classList.remove('active'));
+    }
+    snapshotAndRender();
+  });
+
+  /* ─── Export ─── */
+  $('downloadWebP').addEventListener('click', () => exportImage('webp'));
+  $('downloadJPG').addEventListener('click', () => exportImage('jpeg'));
+  $('downloadPNG').addEventListener('click', () => exportImage('png'));
+  $('copyImage').addEventListener('click', copyToClipboard);
+}
+
+function exec(cmd, ui, val) {
+  document.execCommand(cmd, ui, val);
+  textEditor.focus();
+  state.textHtml = textEditor.innerHTML;
+  applyFontSize(state.fontSize);
+}
+
+function highlightAlign() {
+  document.querySelectorAll('#toolbar button[title*="Align"]').forEach(b => b.classList.remove('active'));
+  if (state.textAlign === 'left') alignLeft.classList.add('active');
+  else if (state.textAlign === 'center') alignCenter.classList.add('active');
+  else if (state.textAlign === 'right') alignRight.classList.add('active');
+}
+
+/* ─── Image Loading ─── */
+function loadImageFile(file) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    state.imageDataUrl = e.target.result;
+    imagePreview.src = state.imageDataUrl;
+    dropZone.classList.add('has-image');
+    updateImageTransform();
+    // Wait for DOM image to load so naturalHeight is available for IMG-Height mode
+    if (imagePreview.complete && imagePreview.naturalHeight > 0) {
+      snapshotAndRender();
+    } else {
+      imagePreview.onload = () => snapshotAndRender();
+    }
+  };
+  reader.readAsDataURL(file);
+}
+
+function updateImageTransform() {
+  const rot = state.rotation;
+  const scale = state.zoom / 100;
+  imagePreview.style.transform = `rotate(${rot}deg) scale(${scale})`;
+  imagePreview.style.objectFit = state.fitFill === 'fit' ? 'contain' : 'cover';
+}
+
+/* ─── Divider Drag ─── */
+function startDividerDrag(e) {
+  e.preventDefault();
+  divider.classList.add('active');
+  const wsRect = workspace.getBoundingClientRect();
+
+  function onMove(ev) {
+    let pct = ((ev.clientX - wsRect.left) / wsRect.width) * 100;
+    pct = Math.max(15, Math.min(85, pct));
+    state.leftPanelPct = pct;
+    leftPanel.style.width = pct + '%';
+    scheduleRender();
+  }
+
+  function onUp() {
+    divider.classList.remove('active');
+    document.removeEventListener('mousemove', onMove);
+    document.removeEventListener('mouseup', onUp);
+    pushSnapshot();
+  }
+
+  document.addEventListener('mousemove', onMove);
+  document.addEventListener('mouseup', onUp);
+}
+
+/* ═══════════════════════════════════════
+   CANVAS RENDERING
+   ═══════════════════════════════════════ */
+let renderPending = false;
+let renderCounter = 0;
+
+function scheduleRender() {
+  if (!renderPending) {
+    renderPending = true;
+    requestAnimationFrame(() => {
+      renderPending = false;
+      document.fonts.ready.then(doRender);
+    });
+  }
+}
+
+function snapshotAndRender() {
+  pushSnapshot();
+  scheduleRender();
+}
+
+let debounceTimer = null;
+function debouncedSnapshot() {
+  if (debounceTimer) clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(() => {
+    pushSnapshot();
+    debounceTimer = null;
+  }, 500);
+}
+
+function doRender() {
+  const currentRender = ++renderCounter;
+  const ar = state.aspectRatio;
+  let cw, ch;
+
+  // Calculate base canvas dimensions from aspect ratio
+  if (ar === 'custom') {
+    cw = state.customW;
+    ch = state.customH;
+  } else {
+    const parts = ar.split(':').map(Number);
+    const baseW = 1600;
+    cw = baseW;
+    ch = Math.round(baseW * parts[1] / parts[0]);
+  }
+
+  // IMG-Height mode: canvas height matches loaded image height
+  if (state.imgHeightMode && state.imageDataUrl) {
+    const imgH = imagePreview.naturalHeight;
+    if (imgH > 0) {
+      ch = imgH;
+      // Recalculate width to maintain aspect ratio
+      if (ar === 'custom') {
+        cw = Math.round(ch * state.customW / state.customH);
+      } else {
+        const parts = ar.split(':').map(Number);
+        cw = Math.round(ch * parts[0] / parts[1]);
+      }
+    }
+  }
+
+  const scale = state.canvasScale;
+  canvas.width = cw * scale;
+  canvas.height = ch * scale;
+
+  const w = canvas.width;
+  const h = canvas.height;
+
+  // Clear
+  ctx.clearRect(0, 0, w, h);
+
+  // Background
+  ctx.fillStyle = state.theme === 'dark' ? '#1a1a2e' : '#e8e8ec';
+  ctx.fillRect(0, 0, w, h);
+
+  // Panel split
+  const lPct = state.leftPanelPct / 100;
+  const leftW = w * lPct;
+  const rightW = w * (1 - lPct);
+
+  // Determine which side is image vs text based on panel order
+  const imgOnLeft = state.panelOrder !== 'inverted';
+  const imgW = imgOnLeft ? leftW : rightW;
+  const txtW = imgOnLeft ? rightW : leftW;
+  const imgX = imgOnLeft ? 0 : leftW;
+  const txtX = imgOnLeft ? leftW : 0;
+
+  // ── Render Image ──
+  if (state.imageDataUrl) {
+    const img = new Image();
+    img.onload = () => {
+      if (currentRender !== renderCounter) return; // Stale render
+      ctx.save();
+      // Clip to image area
+      ctx.beginPath();
+      ctx.rect(imgX, 0, imgW, h);
+      ctx.clip();
+
+      // Translate to center of image area for rotation
+      ctx.translate(imgX + imgW / 2, h / 2);
+      ctx.rotate((state.rotation * Math.PI) / 180);
+
+      // Calculate dimensions
+      const imgAspect = img.width / img.height;
+      const areaAspect = imgW / h;
+
+      let dw, dh, dx, dy;
+      if (state.fitFill === 'fit') {
+        if (imgAspect > areaAspect) {
+          dw = imgW; dh = imgW / imgAspect;
+          dx = -imgW / 2; dy = -dh / 2;
+        } else {
+          dh = h; dw = h * imgAspect;
+          dx = -dw / 2; dy = -h / 2;
+        }
+      } else { // fill
+        if (imgAspect > areaAspect) {
+          dh = h; dw = h * imgAspect;
+          dx = -dw / 2; dy = -h / 2;
+        } else {
+          dw = imgW; dh = imgW / imgAspect;
+          dx = -imgW / 2; dy = -dh / 2;
+        }
+      }
+
+      ctx.drawImage(img, dx, dy, dw, dh);
+      ctx.restore();
+
+      // Continue with text rendering
+      renderTextOnCanvas(txtX, txtW, h);
+      updatePreviewImage();
+    };
+
+    img.onerror = () => {
+      // Draw placeholder on error
+      ctx.fillStyle = state.theme === 'dark' ? '#16213e' : '#f0f0f5';
+      ctx.fillRect(imgX, 0, imgW, h);
+      ctx.fillStyle = '#666';
+      ctx.font = '18px Inter, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('Image failed to load', imgX + imgW / 2, h / 2);
+      renderTextOnCanvas(txtX, txtW, h);
+      updatePreviewImage();
+    };
+
+    img.crossOrigin = 'anonymous';
+    img.src = state.imageDataUrl;
+  } else {
+    // No image — draw placeholder
+    ctx.fillStyle = state.theme === 'dark' ? '#16213e' : '#f0f0f5';
+    ctx.fillRect(imgX, 0, imgW, h);
+
+    ctx.fillStyle = '#666';
+    ctx.font = '18px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('No image loaded', imgX + imgW / 2, h / 2);
+
+    renderTextOnCanvas(txtX, txtW, h);
+    updatePreviewImage();
+  }
+}
+
+function renderTextOnCanvas(txtX, txtW, totalH) {
+  // Fill text area background
+  ctx.fillStyle = state.bgColor;
+  ctx.fillRect(txtX, 0, txtW, totalH);
+
+  // Parse text from editor
+  const html = textEditor.innerHTML || '';
+  const scale = state.canvasScale;
+  const defaultStyle = {
+    bold: false,
+    italic: false,
+    underline: false,
+    color: state.textColor,
+    fontFamily: state.fontFamily,
+    fontSize: state.fontSize,
+    letterSpacing: state.letterSpacing
+  };
+
+  const blocks = parseHTML(html, state.textAlign, defaultStyle);
+  if (blocks.length === 0) return;
+
+  // Layout constants
+  const pad = txtW * 0.06;
+  const x = txtX + pad;
+  const maxW = txtW - pad * 2;
+  const lineH = state.fontSize * scale * 1.5;
+
+  ctx.save();
+  ctx.textBaseline = 'top';
+  ctx.textAlign = 'left';
+
+  // First pass: measure text height (dry run, no drawing)
+  let measureY = pad;
+  for (const block of blocks) {
+    measureY = renderBlock(ctx, block, x, measureY, maxW, lineH, block.align, scale, true);
+    if (measureY > totalH * 2) break;
+  }
+
+  // Calculate vertical center offset
+  const textHeight = measureY - pad;
+  const availH = totalH - pad * 2;
+  const yOffset = pad + Math.max(0, (availH - textHeight) / 2);
+
+  // Re-fill background (dry run doesn't draw, but keeps state clean)
+  ctx.fillStyle = state.bgColor;
+  ctx.fillRect(txtX, 0, txtW, totalH);
+
+  // Second pass: render at vertically centered position
+  let y = yOffset;
+  for (const block of blocks) {
+    y = renderBlock(ctx, block, x, y, maxW, lineH, block.align, scale, false);
+    if (y > totalH * 2) break;
+  }
+
+  ctx.restore();
+}
+
+function parseHTML(html, defaultAlign, defaultStyle) {
+  const container = document.createElement('div');
+  container.innerHTML = html;
+
+  const blocks = [];
+
+  function extractRuns(node, inherited, runs) {
+    if (node.nodeType === Node.TEXT_NODE) {
+      if (node.textContent) {
+        runs.push({ text: node.textContent, ...inherited });
+      }
+      return;
+    }
+    if (node.nodeType !== Node.ELEMENT_NODE) return;
+
+    const tag = node.tagName.toLowerCase();
+    const s = { ...inherited };
+
+    if (['b', 'strong'].includes(tag)) s.bold = true;
+    if (['i', 'em'].includes(tag)) s.italic = true;
+    if (['u', 'ins'].includes(tag)) s.underline = true;
+    if (tag === 'font') {
+      const c = node.getAttribute('color');
+      if (c) s.color = normalizeColor(c);
+    }
+    const styleColor = node.style && node.style.color;
+    if (styleColor) s.color = normalizeColor(styleColor);
+    const styleFont = node.style && node.style.fontFamily;
+    if (styleFont) s.fontFamily = styleFont;
+
+    for (const child of node.childNodes) {
+      extractRuns(child, s, runs);
+    }
+  }
+
+  for (const child of container.childNodes) {
+    if (child.nodeType === Node.TEXT_NODE && child.textContent.trim()) {
+      blocks.push({
+        align: defaultAlign,
+        runs: [{ text: child.textContent, ...defaultStyle }]
+      });
+    } else if (child.nodeType === Node.ELEMENT_NODE) {
+      const align = child.style && child.style.textAlign ? child.style.textAlign : defaultAlign;
+      const runs = [];
+      extractRuns(child, defaultStyle, runs);
+      if (runs.length > 0) {
+        // Merge consecutive runs with identical styles
+        const merged = [];
+        for (const r of runs) {
+          const last = merged[merged.length - 1];
+          if (last && stylesEqual(last, r) && !r.text.includes('\n')) {
+            last.text += r.text;
+          } else {
+            // Split on newlines
+            const parts = r.text.split('\n');
+            for (let i = 0; i < parts.length; i++) {
+              if (parts[i]) {
+                const clone = { ...r, text: parts[i] };
+                const lastM = merged[merged.length - 1];
+                if (lastM && stylesEqual(lastM, clone)) {
+                  lastM.text += ' ' + clone.text;
+                } else {
+                  merged.push(clone);
+                }
+              }
+              if (i < parts.length - 1) {
+                merged.push({ break: true });
+              }
+            }
+          }
+        }
+        blocks.push({ align, runs: merged });
+      }
+    }
+  }
+
+  return blocks;
+}
+
+function stylesEqual(a, b) {
+  return a.bold === b.bold && a.italic === b.italic && a.underline === b.underline &&
+         a.color === b.color && a.fontFamily === b.fontFamily &&
+         a.fontSize === b.fontSize && a.letterSpacing === b.letterSpacing;
+}
+
+function normalizeColor(color) {
+  if (!color) return '#ffffff';
+  if (color.startsWith('#')) return color;
+  // Try to parse rgb/rgba
+  const m = color.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+  if (m) {
+    return '#' + [m[1], m[2], m[3]].map(v => parseInt(v).toString(16).padStart(2, '0')).join('');
+  }
+  return '#ffffff';
+}
+
+function renderBlock(ctx, block, x, y, maxWidth, lineHeight, align, scale, dryRun) {
+  const runs = block.runs;
+  if (!runs || runs.length === 0) return y;
+
+  // Build word list
+  const words = [];
+  for (const run of runs) {
+    if (run.break) {
+      words.push({ break: true });
+      continue;
+    }
+    // Split into words (by spaces)
+    const parts = run.text.split(/(\s+)/);
+    for (const p of parts) {
+      if (!p) continue;
+      if (/^\s+$/.test(p)) {
+        words.push({ text: p, style: run, isSpace: true });
+      } else {
+        // Non-space word may have trailing space
+        const m = p.match(/^(\S+)(\s+)?/);
+        if (m) {
+          words.push({ text: m[1], style: run, isSpace: false });
+          if (m[2]) words.push({ text: m[2], style: run, isSpace: true });
+        } else {
+          words.push({ text: p, style: run, isSpace: false });
+        }
+      }
+    }
+  }
+
+  // If no words, return
+  if (words.length === 0) return y;
+
+  let lines = [];
+  let currentLine = [];
+  let currentW = 0;
+
+  for (const word of words) {
+    if (word.break) {
+      if (currentLine.length > 0) {
+        lines.push(currentLine);
+        currentLine = [];
+        currentW = 0;
+      }
+      // Add empty line break
+      lines.push([]);
+      continue;
+    }
+
+    ctx.font = buildFontString(word.style, scale);
+    const tw = ctx.measureText(word.text).width;
+
+    if (currentW + tw > maxWidth && currentLine.length > 0) {
+      lines.push(currentLine);
+      currentLine = [word];
+      currentW = tw;
+    } else {
+      currentLine.push(word);
+      currentW += tw;
+    }
+  }
+
+  if (currentLine.length > 0) {
+    lines.push(currentLine);
+  }
+
+  // Dry run: just return total height without drawing
+  if (dryRun) {
+    const emptyLines = lines.filter(l => l.length === 0).length;
+    const textLines = lines.filter(l => l.length > 0).length;
+    return y + emptyLines * lineHeight * 0.6 + textLines * lineHeight;
+  }
+
+  // Draw each line
+  for (const line of lines) {
+    if (line.length === 0) {
+      y += lineHeight * 0.6; // Empty line
+      continue;
+    }
+
+    // Calculate total line width
+    let totalW = 0;
+    for (const w of line) {
+      ctx.font = buildFontString(w.style, scale);
+      totalW += ctx.measureText(w.text).width;
+    }
+
+    let startX = x;
+    if (align === 'center') startX = x + (maxWidth - totalW) / 2;
+    else if (align === 'right') startX = x + maxWidth - totalW;
+
+    let penX = startX;
+    let maxAscent = 0;
+
+    for (const w of line) {
+      ctx.font = buildFontString(w.style, scale);
+      ctx.fillStyle = w.style.color;
+
+      const metrics = ctx.measureText(w.text);
+      const ascent = metrics.fontBoundingBoxAscent || w.style.fontSize * scale * 0.8;
+      maxAscent = Math.max(maxAscent, ascent);
+
+      // Apply letter spacing manually
+      if (w.style.letterSpacing > 0 && !w.isSpace) {
+        const ls = w.style.letterSpacing * scale;
+        let cx = penX;
+        for (const char of w.text) {
+          ctx.fillText(char, cx, y);
+          cx += ctx.measureText(char).width + ls;
+        }
+        penX += ctx.measureText(w.text).width + (w.text.length - 1) * ls;
+      } else {
+        ctx.fillText(w.text, penX, y);
+        penX += ctx.measureText(w.text).width;
+      }
+    }
+
+    // Underline (draw across entire line for consistency)
+    let anyUnderline = false;
+    for (const w of line) {
+      if (w.style.underline && !w.isSpace) { anyUnderline = true; break; }
+    }
+    if (anyUnderline) {
+      // Draw underline under each underlined word
+      let ux = startX;
+      for (const w of line) {
+        ctx.font = buildFontString(w.style, scale);
+        const tw = ctx.measureText(w.text).width;
+        if (w.style.underline && !w.isSpace) {
+          const yline = y + maxAscent + 2 * scale;
+          ctx.fillStyle = w.style.color;
+          ctx.fillRect(ux, yline, tw, Math.max(1, scale));
+        }
+        ux += tw;
+      }
+    }
+
+    y += lineHeight;
+  }
+
+  return y;
+}
+
+function buildFontString(style, scale) {
+  const size = (style.fontSize || 32) * scale;
+  const family = style.fontFamily || 'Inter';
+  const italic = style.italic ? 'italic ' : '';
+  const bold = style.bold ? 'bold ' : '';
+  return `${italic}${bold}${size}px "${family}", sans-serif`;
+}
+
+/* ═══════════════════════════════════════
+   EXPORT
+   ═══════════════════════════════════════ */
+function exportImage(format) {
+  const link = document.createElement('a');
+  link.download = `sidebyside.${format === 'jpeg' ? 'jpg' : format}`;
+  canvas.toBlob(blob => {
+    if (!blob) { showToast('Export failed'); return; }
+    link.href = URL.createObjectURL(blob);
+    link.click();
+    URL.revokeObjectURL(link.href);
+    showToast(`Downloaded as ${format.toUpperCase()}`);
+  }, format === 'webp' ? 'image/webp' : format === 'jpeg' ? 'image/jpeg' : 'image/png', 0.95);
+}
+
+function copyToClipboard() {
+  canvas.toBlob(blob => {
+    if (!blob) { showToast('Copy failed'); return; }
+    try {
+      navigator.clipboard.write([
+        new ClipboardItem({ [blob.type]: blob })
+      ]).then(() => showToast('Image copied to clipboard!'))
+      .catch(() => fallbackCopy());
+    } catch {
+      fallbackCopy();
+    }
+  }, 'image/png');
+}
+
+function fallbackCopy() {
+  const url = canvas.toDataURL('image/png');
+  const img = document.createElement('img');
+  img.src = url;
+  img.style.position = 'fixed';
+  img.style.top = '-9999px';
+  document.body.appendChild(img);
+  showToast('Right-click the preview to copy');
+  setTimeout(() => document.body.removeChild(img), 1000);
+}
+
+/* ═══════════════════════════════════════
+   TOAST
+   ═══════════════════════════════════════ */
+let toastTimer = null;
+function showToast(msg) {
+  toast.textContent = msg;
+  toast.classList.add('show');
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toast.classList.remove('show'), 2000);
+}
+
+/* ═══════════════════════════════════════
+   START
+   ═══════════════════════════════════════ */
+document.addEventListener('DOMContentLoaded', init);
+// Also try init immediately if DOM already loaded
+if (document.readyState === 'complete' || document.readyState === 'interactive') {
+  init();
+}
+
+})();
+</script>
+</body>
+</html>
