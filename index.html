@@ -83,6 +83,7 @@ body {
 }
 .topbar-actions {
   display: flex; align-items: center; gap: 6px;
+  position: relative;
 }
 .topbar-actions button {
   background: var(--btn-bg);
@@ -97,6 +98,73 @@ body {
 }
 .topbar-actions button:hover { background: var(--btn-hover); }
 .topbar-actions button:active { background: var(--accent); }
+
+/* ─── CONFIG GUI DROPDOWN ─── */
+#configGuiWrapper {
+  position: relative;
+}
+#configGuiBtn {
+  background: var(--accent) !important;
+  color: #fff !important;
+  border-color: var(--accent) !important;
+  padding: 6px 14px !important;
+  font-size: 13px !important;
+  font-weight: 600;
+  white-space: nowrap;
+}
+#configGuiBtn:hover { opacity: .85; }
+#configGuiBtn.active {
+  background: var(--btn-bg) !important;
+  color: var(--text) !important;
+  border-color: var(--input-border) !important;
+}
+
+.config-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 6px;
+  background: var(--panel-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 8px 32px var(--shadow);
+  min-width: 240px;
+  z-index: 50;
+  display: none;
+  overflow: hidden;
+}
+.config-dropdown.open { display: block; }
+
+.config-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  cursor: pointer;
+  transition: background .15s;
+  font-size: 13px;
+  border-bottom: 1px solid var(--border);
+}
+.config-option:last-child { border-bottom: none; }
+.config-option:hover { background: var(--input-bg); }
+.config-option.selected { background: var(--input-bg); }
+
+.config-option .config-icon {
+  display: flex;
+  gap: 3px;
+  font-size: 16px;
+  opacity: 0.7;
+  min-width: 36px;
+  justify-content: center;
+}
+.config-option .config-label { flex: 1; }
+.config-option .config-check {
+  color: var(--accent);
+  font-weight: 700;
+  font-size: 14px;
+  min-width: 16px;
+  text-align: center;
+}
 
 /* ─── WORKSPACE ─── */
 #workspace {
@@ -147,8 +215,28 @@ body {
   border-radius: 1px;
 }
 
-/* ─── DROP ZONE ─── */
-#dropZone {
+/* ─── DROP ZONES CONTAINER ─── */
+#dropZonesContainer {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.drop-zone-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  position: relative;
+}
+.drop-zone-wrapper + .drop-zone-wrapper {
+  border-top: 2px solid var(--border);
+}
+.drop-zone-wrapper.active-zone .drop-zone {
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+
+.drop-zone {
   flex: 1;
   display: flex;
   align-items: center;
@@ -156,11 +244,11 @@ body {
   position: relative;
   overflow: hidden;
 }
-#dropZone.has-image { cursor: default; }
-#dropZone.dragover {
+.drop-zone.has-image { cursor: default; }
+.drop-zone.dragover {
   background: var(--dropzone-bg);
 }
-#dropZone.has-image .drop-content { display: none; }
+.drop-zone.has-image .drop-content { display: none; }
 
 .drop-content {
   display: flex;
@@ -177,7 +265,7 @@ body {
 }
 .drop-content p { font-size: 14px; line-height: 1.4; }
 .drop-content .sub { font-size: 12px; opacity: 0.6; }
-#attachBtn {
+.attach-btn {
   background: var(--accent);
   color: #fff;
   border: none;
@@ -187,16 +275,16 @@ body {
   font-size: 14px;
   transition: opacity .15s;
 }
-#attachBtn:hover { opacity: .85; }
+.attach-btn:hover { opacity: .85; }
 
-#imagePreview {
+.image-preview {
   max-width: 100%;
   max-height: 100%;
   object-fit: contain;
   display: none;
   transition: transform .2s;
 }
-#dropZone.has-image #imagePreview { display: block; }
+.drop-zone.has-image .image-preview { display: block; }
 
 .paste-hint {
   position: absolute;
@@ -208,7 +296,16 @@ body {
   transition: opacity .3s;
   pointer-events: none;
 }
-#dropZone:hover .paste-hint { opacity: 0.6; }
+.drop-zone:hover .paste-hint { opacity: 0.6; }
+
+/* ─── ACTIVE INDICATOR ─── */
+.active-indicator {
+  font-size: 11px;
+  color: var(--accent);
+  padding: 2px 8px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
 
 /* ─── IMAGE TOOLS ─── */
 #imageTools {
@@ -344,8 +441,27 @@ body {
 }
 .range-value { min-width: 24px; text-align: center; font-size: 11px; }
 
-/* ─── TEXT EDITOR ─── */
-#textEditor {
+/* ─── TEXT EDITORS CONTAINER ─── */
+#textEditorsContainer {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.text-editor-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.text-editor-wrapper + .text-editor-wrapper {
+  border-top: 2px solid var(--border);
+}
+.text-editor-wrapper.active-editor {
+  box-shadow: inset 0 2px 0 var(--accent);
+}
+
+.text-editor {
   flex: 1;
   padding: 24px;
   outline: none;
@@ -357,14 +473,14 @@ body {
   cursor: text;
   word-wrap: break-word;
 }
-#textEditor:empty::before {
+.text-editor:empty::before {
   content: attr(data-placeholder);
   color: var(--text-dim);
   opacity: 0.5;
 }
-#textEditor::-webkit-scrollbar { width: 6px; }
-#textEditor::-webkit-scrollbar-track { background: transparent; }
-#textEditor::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+.text-editor::-webkit-scrollbar { width: 6px; }
+.text-editor::-webkit-scrollbar-track { background: transparent; }
+.text-editor::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 
 /* ─── PREVIEW ─── */
 #textPreviewSection {
@@ -463,8 +579,9 @@ body {
   #bottombar { padding: 6px 10px; gap: 6px; }
   #toolbar { padding: 4px 6px; }
   #toolbar select { max-width: 100px; }
-  #textEditor { padding: 12px; }
+  .text-editor { padding: 12px; }
   .custom-inputs input[type="number"] { width: 44px; }
+  .config-dropdown { right: auto; left: 0; }
 }
 
 /* ─── TOAST ─── */
@@ -485,6 +602,8 @@ body {
   box-shadow: 0 4px 20px var(--shadow);
 }
 #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ─── IMG HEIGHT MODE HIDE DROP ZONES ─── */
 </style>
 </head>
 <body>
@@ -493,6 +612,31 @@ body {
 <header id="topbar">
   <h1>SideBySide Editor</h1>
   <div class="topbar-actions">
+    <div id="configGuiWrapper">
+      <button id="configGuiBtn" title="Layout Configuration">Config GUI ▾</button>
+      <div id="configDropdown" class="config-dropdown">
+        <div class="config-option selected" data-config="1i1t">
+          <span class="config-icon">◻ T</span>
+          <span class="config-label">1 Image + 1 Text</span>
+          <span class="config-check">✓</span>
+        </div>
+        <div class="config-option" data-config="1i2t">
+          <span class="config-icon">◻ T|T</span>
+          <span class="config-label">1 Image + 2 Texts</span>
+          <span class="config-check"></span>
+        </div>
+        <div class="config-option" data-config="2i1t">
+          <span class="config-icon">◻◻ T</span>
+          <span class="config-label">2 Images + 1 Text</span>
+          <span class="config-check"></span>
+        </div>
+        <div class="config-option" data-config="2i2t">
+          <span class="config-icon">◻◻ T|T</span>
+          <span class="config-label">2 Images + 2 Texts</span>
+          <span class="config-check"></span>
+        </div>
+      </div>
+    </div>
     <button id="undoBtn" title="Undo (Ctrl+Z)">↩</button>
     <button id="redoBtn" title="Redo (Ctrl+Shift+Z)">↪</button>
     <button id="themeToggle" title="Toggle Theme"></button>
@@ -502,21 +646,15 @@ body {
 <!-- ─── WORKSPACE ─── -->
 <main id="workspace">
   <div id="leftPanel" class="panel">
-    <div id="dropZone">
-      <div class="drop-content">
-        <div class="drop-icon">🖼</div>
-        <p>Drop your image here</p>
-        <button id="attachBtn">Attach Image</button>
-        <p class="sub">or paste from clipboard (Ctrl+V)</p>
-      </div>
-      <img id="imagePreview" alt="Preview" crossorigin="anonymous">
-      <div class="paste-hint">Ctrl+V to paste image</div>
+    <div id="dropZonesContainer">
+      <!-- Drop zones created dynamically by buildLayout() -->
     </div>
     <div id="textPreviewSection">
       <div id="textPreviewHeader">Preview</div>
       <img id="textPreviewContent" alt="Preview">
     </div>
     <div id="imageTools">
+      <span id="activeImgIndicator" class="active-indicator"></span>
       <label>Zoom
         <input type="range" id="zoomSlider" min="10" max="300" value="100">
         <span id="zoomValue">100%</span>
@@ -537,6 +675,7 @@ body {
 
   <div id="rightPanel" class="panel" style="background:var(--panel-bg-secondary);">
     <div id="toolbar">
+      <span id="activeTextIndicator" class="active-indicator"></span>
       <button id="boldBtn" class="bold-btn" title="Bold (Ctrl+B)">B</button>
       <button id="italicBtn" class="italic-btn" title="Italic (Ctrl+I)">I</button>
       <button id="underlineBtn" class="underline-btn" title="Underline (Ctrl+U)">U</button>
@@ -565,7 +704,9 @@ body {
         <span class="range-value" id="letterSpacingVal">0</span>
       </label>
     </div>
-    <div id="textEditor" contenteditable="true" data-placeholder="Type your text here..." spellcheck="true"></div>
+    <div id="textEditorsContainer">
+      <!-- Text editors created dynamically by buildLayout() -->
+    </div>
   </div>
 
 </main>
@@ -618,22 +759,31 @@ const FONTS = [
 /* ═══════════════════════════════════════
    STATE
    ═══════════════════════════════════════ */
+function makeDefaultImage() {
+  return { dataUrl: null, zoom: 100, rotation: 0, fitFill: 'fit', naturalW: 0, naturalH: 0 };
+}
+function makeDefaultText() {
+  return {
+    html: '',
+    fontFamily: 'Inter',
+    fontSize: 32,
+    letterSpacing: 0,
+    textColor: '#ffffff',
+    textAlign: 'left'
+  };
+}
+
 const state = {
-  imageDataUrl: null,
-  zoom: 100,
-  rotation: 0,
-  fitFill: 'fit',        // 'fit' | 'fill'
-  textHtml: '',
-  fontFamily: 'Inter',
-  fontSize: 32,
-  letterSpacing: 0,
-  textColor: '#ffffff',
+  config: '1i1t',
+  images: [makeDefaultImage()],
+  texts: [makeDefaultText()],
+  activeImageIdx: 0,
+  activeTextIdx: 0,
   bgColor: '#1a1a35',
-  textAlign: 'left',
   aspectRatio: '1:1',
   customW: 1920,
   customH: 1080,
-  panelOrder: 'normal',  // 'normal' | 'inverted'
+  panelOrder: 'normal',
   leftPanelPct: 50,
   canvasScale: 2,
   imgHeightMode: true,
@@ -647,16 +797,27 @@ const undoStack = [];
 const redoStack = [];
 const MAX_UNDO = 50;
 
+function cloneState() {
+  return {
+    config: state.config,
+    images: state.images.map(img => ({ ...img, dataUrl: img.dataUrl })),
+    texts: state.texts.map(txt => ({ ...txt })),
+    activeImageIdx: state.activeImageIdx,
+    activeTextIdx: state.activeTextIdx,
+    bgColor: state.bgColor,
+    aspectRatio: state.aspectRatio,
+    customW: state.customW,
+    customH: state.customH,
+    panelOrder: state.panelOrder,
+    leftPanelPct: state.leftPanelPct,
+    canvasScale: state.canvasScale,
+    imgHeightMode: state.imgHeightMode,
+    theme: state.theme
+  };
+}
+
 function pushSnapshot() {
-  const snap = {};
-  for (const k in state) {
-    if (k === 'imageDataUrl') {
-      snap.imageDataUrl = state.imageDataUrl;
-    } else {
-      snap[k] = state[k];
-    }
-  }
-  undoStack.push(snap);
+  undoStack.push(cloneState());
   redoStack.length = 0;
   if (undoStack.length > MAX_UNDO) undoStack.shift();
   updateUndoButtons();
@@ -682,9 +843,25 @@ function redo() {
 }
 
 function applySnapshot(snap) {
-  for (const k in snap) {
-    state[k] = snap[k];
-  }
+  // Read text HTML from editors before overwriting
+  syncTextsFromEditors();
+
+  state.config = snap.config;
+  state.images = snap.images.map(i => ({ ...i, dataUrl: i.dataUrl }));
+  state.texts = snap.texts.map(t => ({ ...t }));
+  state.activeImageIdx = Math.min(snap.activeImageIdx, state.images.length - 1);
+  state.activeTextIdx = Math.min(snap.activeTextIdx, state.texts.length - 1);
+  state.bgColor = snap.bgColor;
+  state.aspectRatio = snap.aspectRatio;
+  state.customW = snap.customW;
+  state.customH = snap.customH;
+  state.panelOrder = snap.panelOrder;
+  state.leftPanelPct = snap.leftPanelPct;
+  state.canvasScale = snap.canvasScale;
+  state.imgHeightMode = snap.imgHeightMode;
+  state.theme = snap.theme;
+
+  rebuildLayout();
   syncUIFromState();
 }
 
@@ -707,9 +884,12 @@ function setTheme(theme) {
    DOM REFS
    ═══════════════════════════════════════ */
 const $ = id => document.getElementById(id);
-const dropZone = $('dropZone');
-const imagePreview = $('imagePreview');
-const attachBtn = $('attachBtn');
+const dropZonesContainer = $('dropZonesContainer');
+const textEditorsContainer = $('textEditorsContainer');
+const imagePreview = () => document.querySelector('.drop-zone.active-zone .image-preview');
+const activeDropZone = () => document.querySelector('.drop-zone-wrapper.active-zone');
+const activeTextWrapper = () => document.querySelector('.text-editor-wrapper.active-editor');
+const activeTextEditor = () => activeTextWrapper() ? activeTextWrapper().querySelector('.text-editor') : null;
 const zoomSlider = $('zoomSlider');
 const zoomValue = $('zoomValue');
 const rotateCCW = $('rotateCCW');
@@ -717,7 +897,6 @@ const rotateCW = $('rotateCW');
 const zoomResetBtn = $('zoomResetBtn');
 const fitOpt = $('fitOpt');
 const fillOpt = $('fillOpt');
-const textEditor = $('textEditor');
 const boldBtn = $('boldBtn');
 const italicBtn = $('italicBtn');
 const underlineBtn = $('underlineBtn');
@@ -739,6 +918,302 @@ const toast = $('toast');
 const leftPanel = $('leftPanel');
 const rightPanel = $('rightPanel');
 const workspace = $('workspace');
+const activeImgIndicator = $('activeImgIndicator');
+const activeTextIndicator = $('activeTextIndicator');
+
+/* ═══════════════════════════════════════
+   CONFIG GUI
+   ═══════════════════════════════════════ */
+const configBtn = $('configGuiBtn');
+const configDropdown = $('configDropdown');
+
+function toggleConfigDropdown(e) {
+  e.stopPropagation();
+  configDropdown.classList.toggle('open');
+  configBtn.classList.toggle('active');
+}
+
+function closeConfigDropdown() {
+  configDropdown.classList.remove('open');
+  configBtn.classList.remove('active');
+}
+
+function selectConfig(config) {
+  if (config === state.config) { closeConfigDropdown(); return; }
+
+  // Sync current editors
+  syncTextsFromEditors();
+
+  // Determine new counts
+  const imgCount = config === '1i1t' || config === '1i2t' ? 1 : 2;
+  const txtCount = config === '1i1t' || config === '2i1t' ? 1 : 2;
+
+  // Adjust images array
+  while (state.images.length < imgCount) state.images.push(makeDefaultImage());
+  while (state.images.length > imgCount) state.images.pop();
+
+  // Adjust texts array
+  while (state.texts.length < txtCount) state.texts.push(makeDefaultText());
+  while (state.texts.length > txtCount) state.texts.pop();
+
+  state.config = config;
+  state.activeImageIdx = Math.min(state.activeImageIdx, state.images.length - 1);
+  state.activeTextIdx = Math.min(state.activeTextIdx, state.texts.length - 1);
+
+  // Update dropdown UI
+  document.querySelectorAll('.config-option').forEach(opt => {
+    const isSelected = opt.dataset.config === config;
+    opt.classList.toggle('selected', isSelected);
+    opt.querySelector('.config-check').textContent = isSelected ? '✓' : '';
+  });
+
+  rebuildLayout();
+  syncUIFromState();
+  snapshotAndRender();
+  closeConfigDropdown();
+}
+
+/* ═══════════════════════════════════════
+   LAYOUT BUILDER
+   ═══════════════════════════════════════ */
+function rebuildLayout() {
+  buildDropZones();
+  buildTextEditors();
+}
+
+function buildDropZones() {
+  dropZonesContainer.innerHTML = '';
+  state.images.forEach((img, i) => {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'drop-zone-wrapper' + (i === state.activeImageIdx ? ' active-zone' : '');
+    wrapper.dataset.index = i;
+    wrapper.innerHTML = `
+      <div class="drop-zone${img.dataUrl ? ' has-image' : ''}" data-index="${i}">
+        <div class="drop-content">
+          <div class="drop-icon">🖼</div>
+          <p>Drop your image here</p>
+          <button class="attach-btn" data-index="${i}">Attach Image</button>
+          <p class="sub">or paste from clipboard (Ctrl+V)</p>
+        </div>
+        <img class="image-preview" alt="Preview" crossorigin="anonymous" data-index="${i}">
+        <div class="paste-hint">Ctrl+V to paste image</div>
+      </div>`;
+    dropZonesContainer.appendChild(wrapper);
+
+    // Bind drop zone events
+    const zone = wrapper.querySelector('.drop-zone');
+    const preview = wrapper.querySelector('.image-preview');
+    const attach = wrapper.querySelector('.attach-btn');
+
+    zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('dragover'); });
+    zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
+    zone.addEventListener('drop', e => {
+      e.preventDefault();
+      zone.classList.remove('dragover');
+      const file = e.dataTransfer.files[0];
+      if (file && file.type.startsWith('image/')) loadImageToIndex(i, file);
+    });
+
+    zone.addEventListener('click', () => {
+      setActiveImage(i);
+    });
+
+    attach.addEventListener('click', e => {
+      e.stopPropagation();
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'image/*';
+      input.onchange = () => { if (input.files[0]) loadImageToIndex(i, input.files[0]); };
+      input.click();
+    });
+
+    // Restore image if data exists
+    if (img.dataUrl) {
+      preview.src = img.dataUrl;
+      zone.classList.add('has-image');
+      applyImageTransform(i);
+    }
+  });
+}
+
+function buildTextEditors() {
+  textEditorsContainer.innerHTML = '';
+  state.texts.forEach((txt, i) => {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'text-editor-wrapper' + (i === state.activeTextIdx ? ' active-editor' : '');
+    wrapper.dataset.index = i;
+    const editor = document.createElement('div');
+    editor.className = 'text-editor';
+    editor.contentEditable = true;
+    editor.dataset.index = i;
+    editor.dataset.placeholder = `Type your text here...`;
+    editor.spellcheck = true;
+    editor.innerHTML = txt.html;
+    // Apply styling
+    editor.style.fontFamily = `"${txt.fontFamily}", sans-serif`;
+    editor.style.fontSize = txt.fontSize + 'px';
+    editor.style.letterSpacing = txt.letterSpacing + 'px';
+    editor.style.textAlign = txt.textAlign;
+    editor.style.color = txt.textColor;
+    wrapper.appendChild(editor);
+
+    editor.addEventListener('focus', () => setActiveText(i));
+    editor.addEventListener('input', () => {
+      state.texts[i].html = editor.innerHTML;
+      adjustTextVerticalCenter(editor);
+      debouncedSnapshot();
+      scheduleRender();
+    });
+
+    // Keyboard shortcuts for formatting
+    editor.addEventListener('keydown', e => {
+      if ((e.ctrlKey || e.metaKey) && ['b','i','u'].includes(e.key)) {
+        e.stopPropagation();
+      }
+    });
+
+    textEditorsContainer.appendChild(wrapper);
+  });
+}
+
+/* ═══════════════════════════════════════
+   ACTIVE INDEX MANAGEMENT
+   ═══════════════════════════════════════ */
+function setActiveImage(idx) {
+  if (state.activeImageIdx === idx) return;
+  state.activeImageIdx = idx;
+  // Update visual
+  document.querySelectorAll('.drop-zone-wrapper').forEach((w, i) => {
+    w.classList.toggle('active-zone', i === idx);
+  });
+  syncImageToolsFromState();
+}
+
+function setActiveText(idx) {
+  if (state.activeTextIdx === idx) return;
+  state.activeTextIdx = idx;
+  document.querySelectorAll('.text-editor-wrapper').forEach((w, i) => {
+    w.classList.toggle('active-editor', i === idx);
+  });
+  syncTextToolsFromState();
+}
+
+/* ═══════════════════════════════════════
+   SYNC UI ← STATE
+   ═══════════════════════════════════════ */
+function syncUIFromState() {
+  // Theme
+  setTheme(state.theme);
+  document.getElementById('themeToggle').textContent = state.theme === 'dark' ? '🌙' : '☀️';
+
+  // Config dropdown
+  document.querySelectorAll('.config-option').forEach(opt => {
+    const isSelected = opt.dataset.config === state.config;
+    opt.classList.toggle('selected', isSelected);
+    opt.querySelector('.config-check').textContent = isSelected ? '✓' : '';
+  });
+
+  // Image tools
+  syncImageToolsFromState();
+
+  // Text tools
+  syncTextToolsFromState();
+
+  // Background color
+  bgColorInput.value = state.bgColor;
+  rightPanel.style.background = state.bgColor;
+  document.querySelectorAll('.text-editor-wrapper').forEach((w, i) => {
+    const editor = w.querySelector('.text-editor');
+    if (editor) editor.style.color = state.texts[i] ? state.texts[i].textColor : state.texts[0]?.textColor || '#ffffff';
+  });
+
+  // IMG-Height button
+  $('imgHeightBtn').classList.toggle('active', state.imgHeightMode);
+
+  // Aspect ratio
+  document.querySelectorAll('.ar-group button[data-ar]').forEach(b => b.classList.remove('active'));
+  if (!state.imgHeightMode) {
+    const arBtn = document.querySelector(`.ar-group button[data-ar="${state.aspectRatio}"]`);
+    if (arBtn) arBtn.classList.add('active');
+  }
+  $('customArInputs').style.display = state.aspectRatio === 'custom' ? 'flex' : 'none';
+  $('customW').value = state.customW;
+  $('customH').value = state.customH;
+
+  // Panel order
+  workspace.style.flexDirection = state.panelOrder === 'inverted' ? 'row-reverse' : 'row';
+
+  // Left panel width
+  leftPanel.style.width = state.leftPanelPct + '%';
+
+  // Image Height mode
+  requestAnimationFrame(() => {
+    document.querySelectorAll('.text-editor').forEach(ed => adjustTextVerticalCenter(ed));
+  });
+}
+
+function syncImageToolsFromState() {
+  const img = state.images[state.activeImageIdx] || state.images[0];
+  zoomSlider.value = img.zoom;
+  zoomValue.textContent = img.zoom + '%';
+  if (img.fitFill === 'fit') { fitOpt.classList.add('active'); fillOpt.classList.remove('active'); }
+  else { fillOpt.classList.add('active'); fitOpt.classList.remove('active'); }
+  activeImgIndicator.textContent = state.images.length > 1 ? `Image ${state.activeImageIdx + 1}` : '';
+}
+
+function syncTextToolsFromState() {
+  const txt = state.texts[state.activeTextIdx] || state.texts[0];
+  if (!txt) return;
+  textColorInput.value = txt.textColor;
+  fontSelect.value = txt.fontFamily;
+  fontSizeSlider.value = txt.fontSize;
+  fontSizeVal.textContent = txt.fontSize;
+  letterSpacingSlider.value = txt.letterSpacing;
+  letterSpacingVal.textContent = txt.letterSpacing;
+
+  document.querySelectorAll('#toolbar button[title*="Align"]').forEach(b => b.classList.remove('active'));
+  if (txt.textAlign === 'left') alignLeft.classList.add('active');
+  else if (txt.textAlign === 'center') alignCenter.classList.add('active');
+  else if (txt.textAlign === 'right') alignRight.classList.add('active');
+
+  activeTextIndicator.textContent = state.texts.length > 1 ? `Text ${state.activeTextIdx + 1}` : '';
+}
+
+function adjustTextVerticalCenter(editor) {
+  if (!editor) return;
+  const defaultPad = 24;
+  editor.style.paddingTop = '';
+  editor.style.paddingBottom = '';
+  const scrollH = editor.scrollHeight;
+  const clientH = editor.clientHeight;
+  if (scrollH <= clientH) {
+    const extra = Math.floor((clientH - scrollH) / 2);
+    editor.style.paddingTop = (defaultPad + Math.max(0, extra)) + 'px';
+    editor.style.paddingBottom = (defaultPad + Math.max(0, extra)) + 'px';
+  } else {
+    editor.style.paddingTop = defaultPad + 'px';
+    editor.style.paddingBottom = defaultPad + 'px';
+  }
+}
+
+function syncTextsFromEditors() {
+  document.querySelectorAll('.text-editor').forEach(ed => {
+    const idx = parseInt(ed.dataset.index);
+    if (!isNaN(idx) && state.texts[idx]) {
+      state.texts[idx].html = ed.innerHTML;
+    }
+  });
+}
+
+function applyFontSizeToEditor(editor, size) {
+  if (!editor) return;
+  editor.style.fontSize = size + 'px';
+  for (const child of editor.children) {
+    if (child.nodeType === Node.ELEMENT_NODE) {
+      child.style.fontSize = size + 'px';
+    }
+  }
+}
 
 /* ═══════════════════════════════════════
    INIT
@@ -748,8 +1223,8 @@ let initialized = false;
 function init() {
   if (initialized) return;
   initialized = true;
-  // Load theme
   const savedTheme = localStorage.getItem('sbs-theme') || 'dark';
+  state.theme = savedTheme;
   setTheme(savedTheme);
 
   // Populate font select
@@ -757,26 +1232,28 @@ function init() {
     const opt = document.createElement('option');
     opt.value = f;
     opt.textContent = f;
-    if (f === state.fontFamily) opt.selected = true;
+    if (f === state.texts[0].fontFamily) opt.selected = true;
     fontSelect.appendChild(opt);
   });
+
+  // Build initial layout
+  rebuildLayout();
+  syncUIFromState();
 
   // Initial snapshot
   pushSnapshot();
 
   // Load font
-  loadGoogleFont(state.fontFamily);
-
-  // Sync UI
-  syncUIFromState();
+  loadGoogleFont(state.texts[0].fontFamily);
 
   // Bind events
   bindEvents();
 
   // Initial render
   scheduleRender();
-  // Center text after layout settles
-  setTimeout(adjustTextVerticalCenter, 50);
+  setTimeout(() => {
+    document.querySelectorAll('.text-editor').forEach(ed => adjustTextVerticalCenter(ed));
+  }, 50);
 }
 
 /* ═══════════════════════════════════════
@@ -794,168 +1271,69 @@ function loadGoogleFont(family) {
 }
 
 /* ═══════════════════════════════════════
-   SYNC UI ← STATE
+   IMAGE LOADING
    ═══════════════════════════════════════ */
-function syncUIFromState() {
-  // Image
-  if (state.imageDataUrl) {
-    imagePreview.src = state.imageDataUrl;
-    dropZone.classList.add('has-image');
-  } else {
-    imagePreview.src = '';
-    dropZone.classList.remove('has-image');
-  }
-  zoomSlider.value = state.zoom;
-  zoomValue.textContent = state.zoom + '%';
-  if (state.fitFill === 'fit') { fitOpt.classList.add('active'); fillOpt.classList.remove('active'); }
-  else { fillOpt.classList.add('active'); fitOpt.classList.remove('active'); }
-
-  // Text
-  textEditor.innerHTML = state.textHtml;
-  textEditor.style.fontFamily = `"${state.fontFamily}", sans-serif`;
-  applyFontSize(state.fontSize);
-  textEditor.style.letterSpacing = state.letterSpacing + 'px';
-  textEditor.style.textAlign = state.textAlign;
-  textColorInput.value = state.textColor;
-  bgColorInput.value = state.bgColor;
-  rightPanel.style.background = state.bgColor;
-  fontSelect.value = state.fontFamily;
-  fontSizeSlider.value = state.fontSize;
-  fontSizeVal.textContent = state.fontSize;
-  letterSpacingSlider.value = state.letterSpacing;
-  letterSpacingVal.textContent = state.letterSpacing;
-
-  // Alignment buttons
-  document.querySelectorAll('#toolbar button[title*="Align"]').forEach(b => b.classList.remove('active'));
-  if (state.textAlign === 'left') alignLeft.classList.add('active');
-  else if (state.textAlign === 'center') alignCenter.classList.add('active');
-  else if (state.textAlign === 'right') alignRight.classList.add('active');
-
-  // IMG-Height button
-  $('imgHeightBtn').classList.toggle('active', state.imgHeightMode);
-
-  // Aspect ratio (only show active when IMG-Height is off)
-  document.querySelectorAll('.ar-group button[data-ar]').forEach(b => b.classList.remove('active'));
-  if (!state.imgHeightMode) {
-    const arBtn = document.querySelector(`.ar-group button[data-ar="${state.aspectRatio}"]`);
-    if (arBtn) arBtn.classList.add('active');
-  }
-  $('customArInputs').style.display = state.aspectRatio === 'custom' ? 'flex' : 'none';
-  $('customW').value = state.customW;
-  $('customH').value = state.customH;
-
-  // Panel order
-  if (state.panelOrder === 'inverted') {
-    workspace.style.flexDirection = 'row-reverse';
-  } else {
-    workspace.style.flexDirection = 'row';
-  }
-
-  // Left panel width
-  leftPanel.style.width = state.leftPanelPct + '%';
-
-  // Re-center text vertically on next frame
-  requestAnimationFrame(() => adjustTextVerticalCenter());
-}
-
-function adjustTextVerticalCenter() {
-  const editor = textEditor;
-  const defaultPad = 24;
-  // Reset to defaults first
-  editor.style.paddingTop = '';
-  editor.style.paddingBottom = '';
-  const scrollH = editor.scrollHeight;
-  const clientH = editor.clientHeight;
-  if (scrollH <= clientH) {
-    const extra = Math.floor((clientH - scrollH) / 2);
-    editor.style.paddingTop = (defaultPad + Math.max(0, extra)) + 'px';
-    editor.style.paddingBottom = (defaultPad + Math.max(0, extra)) + 'px';
-  } else {
-    editor.style.paddingTop = defaultPad + 'px';
-    editor.style.paddingBottom = defaultPad + 'px';
-  }
-}
-
-function applyFontSize(size) {
-  textEditor.style.fontSize = size + 'px';
-  // Also set on all direct child elements (created by execCommand like <b>, <i>, <font>)
-  // to ensure font-size is applied even if CSS inheritance is blocked.
-  for (const child of textEditor.children) {
-    if (child.nodeType === Node.ELEMENT_NODE) {
-      child.style.fontSize = size + 'px';
-    }
-  }
-}
-
-function updatePreviewImage() {
-  const preview = document.getElementById('textPreviewContent');
-  const section = document.getElementById('textPreviewSection');
-  const header = document.getElementById('textPreviewHeader');
-  preview.src = canvas.toDataURL('image/png');
-  section.style.background = state.bgColor;
-
-  // When IMG-Height is active, match preview height to the displayed image height
-  if (state.imgHeightMode && state.imageDataUrl && imagePreview.naturalHeight > 0) {
-    const displayedRect = imagePreview.getBoundingClientRect();
-    const displayedH = displayedRect.height;
-    const maxH = Math.min(imagePreview.naturalHeight, 400);
-    section.style.maxHeight = maxH + 'px';
-    if (displayedH > 1 && canvas.height > 0) {
-      const ar = canvas.width / canvas.height;
-      const headerH = header.offsetHeight || 18;
-      let previewH = Math.max(40, Math.min(displayedH, maxH));
-      let previewW = previewH * ar;
-      // Cap width to section, re-calc height if needed
-      const sectionW = section.clientWidth;
-      if (previewW > sectionW) {
-        previewW = sectionW;
-        previewH = previewW / ar;
+function loadImageToIndex(idx, file) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    state.images[idx].dataUrl = e.target.result;
+    rebuildLayout();
+    setActiveImage(idx);
+    const wrapper = document.querySelector(`.drop-zone-wrapper[data-index="${idx}"]`);
+    if (wrapper) {
+      const preview = wrapper.querySelector('.image-preview');
+      const zone = wrapper.querySelector('.drop-zone');
+      preview.src = state.images[idx].dataUrl;
+      zone.classList.add('has-image');
+      applyImageTransform(idx);
+      preview.onload = () => {
+        state.images[idx].naturalW = preview.naturalWidth;
+        state.images[idx].naturalH = preview.naturalHeight;
+        snapshotAndRender();
+      };
+      if (preview.complete && preview.naturalHeight > 0) {
+        state.images[idx].naturalW = preview.naturalWidth;
+        state.images[idx].naturalH = preview.naturalHeight;
+        snapshotAndRender();
       }
-      preview.style.width = previewW + 'px';
-      preview.style.height = previewH + 'px';
-      section.style.height = (previewH + headerH) + 'px';
-
-      // One-frame re-stabilize after layout settles (section height change affects drop zone)
-      const stableH = previewH;
-      const stableAr = ar;
-      const stableHeaderH = headerH;
-      requestAnimationFrame(function restabilize() {
-        const newH = imagePreview.getBoundingClientRect().height;
-        if (newH > 1 && Math.abs(newH - stableH) > 1) {
-          let w = newH * stableAr;
-          const sw = section.clientWidth;
-          if (w > sw) { w = sw; }
-          preview.style.width = w + 'px';
-          preview.style.height = newH + 'px';
-          section.style.height = (newH + stableHeaderH) + 'px';
-        }
-      });
-      return;
     }
-    const fallbackH = Math.min(imagePreview.naturalHeight, 300);
-    preview.style.width = '100%';
-    preview.style.height = fallbackH + 'px';
-    section.style.height = fallbackH + 'px';
-    return;
-  }
-  // Default sizing
-  preview.style.width = section.clientWidth + 'px';
-  preview.style.height = '180px';
-  section.style.maxHeight = '40%';
-  section.style.height = '180px';
+  };
+  reader.readAsDataURL(file);
+}
+
+function applyImageTransform(idx) {
+  const wrapper = document.querySelector(`.drop-zone-wrapper[data-index="${idx}"]`);
+  if (!wrapper) return;
+  const preview = wrapper.querySelector('.image-preview');
+  const img = state.images[idx] || state.images[0];
+  const rot = img.rotation;
+  const scale = img.zoom / 100;
+  preview.style.transform = `rotate(${rot}deg) scale(${scale})`;
+  preview.style.objectFit = img.fitFill === 'fit' ? 'contain' : 'cover';
+}
+
+function updateImageTransform() {
+  const idx = state.activeImageIdx;
+  const img = state.images[idx];
+  if (!img) return;
+  const wrapper = document.querySelector(`.drop-zone-wrapper[data-index="${idx}"]`);
+  if (!wrapper) return;
+  const preview = wrapper.querySelector('.image-preview');
+  preview.style.transform = `rotate(${img.rotation}deg) scale(${img.zoom / 100})`;
+  preview.style.objectFit = img.fitFill === 'fit' ? 'contain' : 'cover';
 }
 
 /* ═══════════════════════════════════════
    EVENTS
    ═══════════════════════════════════════ */
 function bindEvents() {
-  /* ─── Theme ─── */
+  // ─── Theme ───
   $('themeToggle').addEventListener('click', () => {
     setTheme(state.theme === 'dark' ? 'light' : 'dark');
     scheduleRender();
   });
 
-  /* ─── Undo / Redo ─── */
+  // ─── Undo / Redo ───
   $('undoBtn').addEventListener('click', undo);
   $('redoBtn').addEventListener('click', redo);
   document.addEventListener('keydown', e => {
@@ -967,55 +1345,54 @@ function bindEvents() {
     }
   });
 
-  /* ─── Drop Zone ─── */
-  dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
-  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
-  dropZone.addEventListener('drop', e => {
-    e.preventDefault();
-    dropZone.classList.remove('dragover');
-    const file = e.dataTransfer.files[0];
-    if (file && file.type.startsWith('image/')) loadImageFile(file);
+  // ─── Config GUI ───
+  configBtn.addEventListener('click', toggleConfigDropdown);
+  document.querySelectorAll('.config-option').forEach(opt => {
+    opt.addEventListener('click', () => selectConfig(opt.dataset.config));
+  });
+  document.addEventListener('click', e => {
+    if (!configBtn.contains(e.target) && !configDropdown.contains(e.target)) {
+      closeConfigDropdown();
+    }
   });
 
-  attachBtn.addEventListener('click', () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*';
-    input.onchange = () => { if (input.files[0]) loadImageFile(input.files[0]); };
-    input.click();
-  });
-
+  // ─── Paste globally → active drop zone ───
   document.addEventListener('paste', e => {
     const items = e.clipboardData.items;
     for (const item of items) {
       if (item.type.startsWith('image/')) {
         const file = item.getAsFile();
-        if (file) { loadImageFile(file); break; }
+        if (file) { loadImageToIndex(state.activeImageIdx, file); break; }
       }
     }
   });
 
-  /* ─── Image Tools ─── */
+  // ─── Image Tools ───
   zoomSlider.addEventListener('input', () => {
-    state.zoom = parseFloat(zoomSlider.value);
-    zoomValue.textContent = state.zoom + '%';
+    const idx = state.activeImageIdx;
+    state.images[idx].zoom = parseFloat(zoomSlider.value);
+    zoomValue.textContent = state.images[idx].zoom + '%';
     updateImageTransform();
+    syncTextsFromEditors();
     debouncedSnapshot();
     scheduleRender();
   });
 
   rotateCCW.addEventListener('click', () => {
-    state.rotation = (state.rotation - 90) % 360;
+    const idx = state.activeImageIdx;
+    state.images[idx].rotation = (state.images[idx].rotation - 90) % 360;
     updateImageTransform();
     snapshotAndRender();
   });
   rotateCW.addEventListener('click', () => {
-    state.rotation = (state.rotation + 90) % 360;
+    const idx = state.activeImageIdx;
+    state.images[idx].rotation = (state.images[idx].rotation + 90) % 360;
     updateImageTransform();
     snapshotAndRender();
   });
   zoomResetBtn.addEventListener('click', () => {
-    state.zoom = 100;
+    const idx = state.activeImageIdx;
+    state.images[idx].zoom = 100;
     zoomSlider.value = 100;
     zoomValue.textContent = '100%';
     updateImageTransform();
@@ -1023,32 +1400,54 @@ function bindEvents() {
   });
 
   fitOpt.addEventListener('click', () => {
-    state.fitFill = 'fit';
+    const idx = state.activeImageIdx;
+    state.images[idx].fitFill = 'fit';
     fitOpt.classList.add('active'); fillOpt.classList.remove('active');
     updateImageTransform();
     snapshotAndRender();
   });
   fillOpt.addEventListener('click', () => {
-    state.fitFill = 'fill';
+    const idx = state.activeImageIdx;
+    state.images[idx].fitFill = 'fill';
     fillOpt.classList.add('active'); fitOpt.classList.remove('active');
     updateImageTransform();
     snapshotAndRender();
   });
 
-  /* ─── Text Formatting ─── */
-  boldBtn.addEventListener('click', () => exec('bold'));
-  italicBtn.addEventListener('click', () => exec('italic'));
-  underlineBtn.addEventListener('click', () => exec('underline'));
+  // ─── Text Formatting (applies to active editor) ───
+  boldBtn.addEventListener('click', () => execOnActive('bold'));
+  italicBtn.addEventListener('click', () => execOnActive('italic'));
+  underlineBtn.addEventListener('click', () => execOnActive('underline'));
 
-  alignLeft.addEventListener('click', () => { exec('justifyLeft'); state.textAlign = 'left'; highlightAlign(); snapshotAndRender(); });
-  alignCenter.addEventListener('click', () => { exec('justifyCenter'); state.textAlign = 'center'; highlightAlign(); snapshotAndRender(); });
-  alignRight.addEventListener('click', () => { exec('justifyRight'); state.textAlign = 'right'; highlightAlign(); snapshotAndRender(); });
-
-  textColorInput.addEventListener('input', () => {
-    state.textColor = textColorInput.value;
-    exec('foreColor', false, state.textColor);
+  alignLeft.addEventListener('click', () => {
+    execOnActive('justifyLeft');
+    state.texts[state.activeTextIdx].textAlign = 'left';
+    highlightAlign();
     snapshotAndRender();
   });
+  alignCenter.addEventListener('click', () => {
+    execOnActive('justifyCenter');
+    state.texts[state.activeTextIdx].textAlign = 'center';
+    highlightAlign();
+    snapshotAndRender();
+  });
+  alignRight.addEventListener('click', () => {
+    execOnActive('justifyRight');
+    state.texts[state.activeTextIdx].textAlign = 'right';
+    highlightAlign();
+    snapshotAndRender();
+  });
+
+  textColorInput.addEventListener('input', () => {
+    const idx = state.activeTextIdx;
+    state.texts[idx].textColor = textColorInput.value;
+    const editor = getTextEditor(idx);
+    if (editor) {
+      execOnActive('foreColor', false, state.texts[idx].textColor);
+    }
+    snapshotAndRender();
+  });
+
   bgColorInput.addEventListener('input', () => {
     state.bgColor = bgColorInput.value;
     rightPanel.style.background = state.bgColor;
@@ -1056,56 +1455,50 @@ function bindEvents() {
   });
 
   fontSelect.addEventListener('change', () => {
-    state.fontFamily = fontSelect.value;
-    loadGoogleFont(state.fontFamily);
-    textEditor.style.fontFamily = `"${state.fontFamily}", sans-serif`;
+    const idx = state.activeTextIdx;
+    state.texts[idx].fontFamily = fontSelect.value;
+    loadGoogleFont(state.texts[idx].fontFamily);
+    const editor = getTextEditor(idx);
+    if (editor) editor.style.fontFamily = `"${state.texts[idx].fontFamily}", sans-serif`;
     snapshotAndRender();
   });
 
   fontSizeSlider.addEventListener('input', () => {
-    state.fontSize = parseFloat(fontSizeSlider.value);
-    fontSizeVal.textContent = state.fontSize;
-    applyFontSize(state.fontSize);
-    adjustTextVerticalCenter();
+    const idx = state.activeTextIdx;
+    state.texts[idx].fontSize = parseFloat(fontSizeSlider.value);
+    fontSizeVal.textContent = state.texts[idx].fontSize;
+    const editor = getTextEditor(idx);
+    if (editor) {
+      applyFontSizeToEditor(editor, state.texts[idx].fontSize);
+      adjustTextVerticalCenter(editor);
+    }
     debouncedSnapshot();
     scheduleRender();
   });
   fontSizeSlider.addEventListener('change', () => { pushSnapshot(); updateUndoButtons(); });
 
   letterSpacingSlider.addEventListener('input', () => {
-    state.letterSpacing = parseFloat(letterSpacingSlider.value);
-    letterSpacingVal.textContent = state.letterSpacing;
-    textEditor.style.letterSpacing = state.letterSpacing + 'px';
+    const idx = state.activeTextIdx;
+    state.texts[idx].letterSpacing = parseFloat(letterSpacingSlider.value);
+    letterSpacingVal.textContent = state.texts[idx].letterSpacing;
+    const editor = getTextEditor(idx);
+    if (editor) editor.style.letterSpacing = state.texts[idx].letterSpacing + 'px';
     debouncedSnapshot();
     scheduleRender();
   });
   letterSpacingSlider.addEventListener('change', () => { pushSnapshot(); updateUndoButtons(); });
 
-  textEditor.addEventListener('input', () => {
-    state.textHtml = textEditor.innerHTML;
-    adjustTextVerticalCenter();
-    debouncedSnapshot();
-    scheduleRender();
-  });
-
-  /* ─── Keyboard shortcuts for formatting ─── */
-  textEditor.addEventListener('keydown', e => {
-    if ((e.ctrlKey || e.metaKey) && ['b','i','u'].includes(e.key)) {
-      e.stopPropagation();
-    }
-  });
-
-  /* ─── Divider ─── */
+  // ─── Divider ───
   divider.addEventListener('mousedown', startDividerDrag);
 
-  /* ─── Invert Panels ─── */
+  // ─── Invert Panels ───
   invertBtn.addEventListener('click', () => {
     state.panelOrder = state.panelOrder === 'normal' ? 'inverted' : 'normal';
     workspace.style.flexDirection = state.panelOrder === 'inverted' ? 'row-reverse' : 'row';
     snapshotAndRender();
   });
 
-  /* ─── Aspect Ratio ─── */
+  // ─── Aspect Ratio ───
   document.querySelectorAll('.ar-group button[data-ar]').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.ar-group button[data-ar]').forEach(b => b.classList.remove('active'));
@@ -1127,7 +1520,7 @@ function bindEvents() {
     snapshotAndRender();
   });
 
-  /* ─── IMG-Height Toggle ─── */
+  // ─── IMG-Height Toggle ───
   $('imgHeightBtn').addEventListener('click', () => {
     state.imgHeightMode = !state.imgHeightMode;
     $('imgHeightBtn').classList.toggle('active', state.imgHeightMode);
@@ -1137,50 +1530,37 @@ function bindEvents() {
     snapshotAndRender();
   });
 
-  /* ─── Export ─── */
+  // ─── Export ───
   $('downloadWebP').addEventListener('click', () => exportImage('webp'));
   $('downloadJPG').addEventListener('click', () => exportImage('jpeg'));
   $('downloadPNG').addEventListener('click', () => exportImage('png'));
   $('copyImage').addEventListener('click', copyToClipboard);
 }
 
-function exec(cmd, ui, val) {
+function getTextEditor(idx) {
+  const wrapper = document.querySelector(`.text-editor-wrapper[data-index="${idx}"]`);
+  return wrapper ? wrapper.querySelector('.text-editor') : null;
+}
+
+function execOnActive(cmd, ui, val) {
+  const editor = activeTextEditor();
+  if (!editor) return;
+  editor.focus();
   document.execCommand(cmd, ui, val);
-  textEditor.focus();
-  state.textHtml = textEditor.innerHTML;
-  applyFontSize(state.fontSize);
+  editor.focus();
+  const idx = parseInt(editor.dataset.index);
+  if (!isNaN(idx) && state.texts[idx]) {
+    state.texts[idx].html = editor.innerHTML;
+    applyFontSizeToEditor(editor, state.texts[idx].fontSize);
+  }
 }
 
 function highlightAlign() {
   document.querySelectorAll('#toolbar button[title*="Align"]').forEach(b => b.classList.remove('active'));
-  if (state.textAlign === 'left') alignLeft.classList.add('active');
-  else if (state.textAlign === 'center') alignCenter.classList.add('active');
-  else if (state.textAlign === 'right') alignRight.classList.add('active');
-}
-
-/* ─── Image Loading ─── */
-function loadImageFile(file) {
-  const reader = new FileReader();
-  reader.onload = e => {
-    state.imageDataUrl = e.target.result;
-    imagePreview.src = state.imageDataUrl;
-    dropZone.classList.add('has-image');
-    updateImageTransform();
-    // Wait for DOM image to load so naturalHeight is available for IMG-Height mode
-    if (imagePreview.complete && imagePreview.naturalHeight > 0) {
-      snapshotAndRender();
-    } else {
-      imagePreview.onload = () => snapshotAndRender();
-    }
-  };
-  reader.readAsDataURL(file);
-}
-
-function updateImageTransform() {
-  const rot = state.rotation;
-  const scale = state.zoom / 100;
-  imagePreview.style.transform = `rotate(${rot}deg) scale(${scale})`;
-  imagePreview.style.objectFit = state.fitFill === 'fit' ? 'contain' : 'cover';
+  const align = state.texts[state.activeTextIdx].textAlign;
+  if (align === 'left') alignLeft.classList.add('active');
+  else if (align === 'center') alignCenter.classList.add('active');
+  else if (align === 'right') alignRight.classList.add('active');
 }
 
 /* ─── Divider Drag ─── */
@@ -1225,6 +1605,7 @@ function scheduleRender() {
 }
 
 function snapshotAndRender() {
+  syncTextsFromEditors();
   pushSnapshot();
   scheduleRender();
 }
@@ -1233,6 +1614,7 @@ let debounceTimer = null;
 function debouncedSnapshot() {
   if (debounceTimer) clearTimeout(debounceTimer);
   debounceTimer = setTimeout(() => {
+    syncTextsFromEditors();
     pushSnapshot();
     debounceTimer = null;
   }, 500);
@@ -1243,7 +1625,6 @@ function doRender() {
   const ar = state.aspectRatio;
   let cw, ch;
 
-  // Calculate base canvas dimensions from aspect ratio
   if (ar === 'custom') {
     cw = state.customW;
     ch = state.customH;
@@ -1254,18 +1635,15 @@ function doRender() {
     ch = Math.round(baseW * parts[1] / parts[0]);
   }
 
-  // IMG-Height mode: canvas height matches loaded image height
-  if (state.imgHeightMode && state.imageDataUrl) {
-    const imgH = imagePreview.naturalHeight;
-    if (imgH > 0) {
-      ch = imgH;
-      // Recalculate width to maintain aspect ratio
-      if (ar === 'custom') {
-        cw = Math.round(ch * state.customW / state.customH);
-      } else {
-        const parts = ar.split(':').map(Number);
-        cw = Math.round(ch * parts[0] / parts[1]);
-      }
+  // Use first loaded image for IMG-Height mode
+  const firstLoadedImg = state.images.find(img => img.naturalH > 0);
+  if (state.imgHeightMode && firstLoadedImg) {
+    ch = firstLoadedImg.naturalH;
+    if (ar === 'custom') {
+      cw = Math.round(ch * state.customW / state.customH);
+    } else {
+      const parts = ar.split(':').map(Number);
+      cw = Math.round(ch * parts[0] / parts[1]);
     }
   }
 
@@ -1276,7 +1654,6 @@ function doRender() {
   const w = canvas.width;
   const h = canvas.height;
 
-  // Clear
   ctx.clearRect(0, 0, w, h);
 
   // Background
@@ -1288,140 +1665,208 @@ function doRender() {
   const leftW = w * lPct;
   const rightW = w * (1 - lPct);
 
-  // Determine which side is image vs text based on panel order
   const imgOnLeft = state.panelOrder !== 'inverted';
   const imgW = imgOnLeft ? leftW : rightW;
   const txtW = imgOnLeft ? rightW : leftW;
   const imgX = imgOnLeft ? 0 : leftW;
   const txtX = imgOnLeft ? leftW : 0;
+  const dividerW = 0;
 
-  // ── Render Image ──
-  if (state.imageDataUrl) {
-    const img = new Image();
-    img.onload = () => {
-      if (currentRender !== renderCounter) return; // Stale render
-      ctx.save();
-      // Clip to image area
-      ctx.beginPath();
-      ctx.rect(imgX, 0, imgW, h);
-      ctx.clip();
+  // ── Render Image(s) ──
+  const loadedImages = state.images.filter(img => img.dataUrl);
+  if (loadedImages.length > 0) {
+    let loadedCount = 0;
+    const totalImages = state.images.length;
 
-      // Translate to center of image area for rotation
-      ctx.translate(imgX + imgW / 2, h / 2);
-      ctx.rotate((state.rotation * Math.PI) / 180);
-
-      // Calculate dimensions
-      const imgAspect = img.width / img.height;
-      const areaAspect = imgW / h;
-
-      let dw, dh, dx, dy;
-      if (state.fitFill === 'fit') {
-        if (imgAspect > areaAspect) {
-          dw = imgW; dh = imgW / imgAspect;
-          dx = -imgW / 2; dy = -dh / 2;
-        } else {
-          dh = h; dw = h * imgAspect;
-          dx = -dw / 2; dy = -h / 2;
+    state.images.forEach((imgData, idx) => {
+      if (!imgData.dataUrl) {
+        // Draw placeholder for empty slot
+        const { subX, subY, subW, subH } = getImageSubArea(idx, totalImages, imgX, 0, imgW, h);
+        ctx.fillStyle = state.theme === 'dark' ? '#16213e' : '#f0f0f5';
+        ctx.fillRect(subX, subY, subW, subH);
+        ctx.fillStyle = '#666';
+        ctx.font = '14px Inter, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('No image loaded', subX + subW / 2, subY + subH / 2);
+        loadedCount++;
+        if (loadedCount === totalImages) {
+          renderAllTexts(txtX, txtW, h);
+          updatePreviewImage();
         }
-      } else { // fill
-        if (imgAspect > areaAspect) {
-          dh = h; dw = h * imgAspect;
-          dx = -dw / 2; dy = -h / 2;
-        } else {
-          dw = imgW; dh = imgW / imgAspect;
-          dx = -imgW / 2; dy = -dh / 2;
-        }
+        return;
       }
 
-      ctx.drawImage(img, dx, dy, dw, dh);
-      ctx.restore();
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
 
-      // Continue with text rendering
-      renderTextOnCanvas(txtX, txtW, h);
-      updatePreviewImage();
-    };
+      img.onload = () => {
+        if (currentRender !== renderCounter) return;
+        const { subX, subY, subW, subH } = getImageSubArea(idx, totalImages, imgX, 0, imgW, h);
 
-    img.onerror = () => {
-      // Draw placeholder on error
-      ctx.fillStyle = state.theme === 'dark' ? '#16213e' : '#f0f0f5';
-      ctx.fillRect(imgX, 0, imgW, h);
-      ctx.fillStyle = '#666';
-      ctx.font = '18px Inter, sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('Image failed to load', imgX + imgW / 2, h / 2);
-      renderTextOnCanvas(txtX, txtW, h);
-      updatePreviewImage();
-    };
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(subX, subY, subW, subH);
+        ctx.clip();
 
-    img.crossOrigin = 'anonymous';
-    img.src = state.imageDataUrl;
+        ctx.translate(subX + subW / 2, subY + subH / 2);
+        ctx.rotate((imgData.rotation * Math.PI) / 180);
+
+        const imgAspect = img.width / img.height;
+        const areaAspect = subW / subH;
+
+        let dw, dh, dx, dy;
+        if (imgData.fitFill === 'fit') {
+          if (imgAspect > areaAspect) {
+            dw = subW; dh = subW / imgAspect;
+            dx = -subW / 2; dy = -dh / 2;
+          } else {
+            dh = subH; dw = subH * imgAspect;
+            dx = -dw / 2; dy = -subH / 2;
+          }
+        } else {
+          if (imgAspect > areaAspect) {
+            dh = subH; dw = subH * imgAspect;
+            dx = -dw / 2; dy = -subH / 2;
+          } else {
+            dw = subW; dh = subW / imgAspect;
+            dx = -subW / 2; dy = -dh / 2;
+          }
+        }
+
+        ctx.drawImage(img, dx, dy, dw, dh);
+        ctx.restore();
+
+        loadedCount++;
+        if (loadedCount === totalImages) {
+          renderAllTexts(txtX, txtW, h);
+          updatePreviewImage();
+        }
+      };
+
+      img.onerror = () => {
+        if (currentRender !== renderCounter) return;
+        const { subX, subY, subW, subH } = getImageSubArea(idx, totalImages, imgX, 0, imgW, h);
+        ctx.fillStyle = state.theme === 'dark' ? '#16213e' : '#f0f0f5';
+        ctx.fillRect(subX, subY, subW, subH);
+        ctx.fillStyle = '#666';
+        ctx.font = '14px Inter, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('Image failed to load', subX + subW / 2, subY + subH / 2);
+        loadedCount++;
+        if (loadedCount === totalImages) {
+          renderAllTexts(txtX, txtW, h);
+          updatePreviewImage();
+        }
+      };
+
+      img.src = imgData.dataUrl;
+    });
   } else {
-    // No image — draw placeholder
-    ctx.fillStyle = state.theme === 'dark' ? '#16213e' : '#f0f0f5';
-    ctx.fillRect(imgX, 0, imgW, h);
-
-    ctx.fillStyle = '#666';
-    ctx.font = '18px Inter, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('No image loaded', imgX + imgW / 2, h / 2);
-
-    renderTextOnCanvas(txtX, txtW, h);
+    // No images — draw placeholder(s)
+    const totalImages = state.images.length;
+    for (let idx = 0; idx < totalImages; idx++) {
+      const { subX, subY, subW, subH } = getImageSubArea(idx, totalImages, imgX, 0, imgW, h);
+      ctx.fillStyle = state.theme === 'dark' ? '#16213e' : '#f0f0f5';
+      ctx.fillRect(subX, subY, subW, subH);
+      ctx.fillStyle = '#666';
+      ctx.font = '14px Inter, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('No image loaded', subX + subW / 2, subY + subH / 2);
+    }
+    renderAllTexts(txtX, txtW, h);
     updatePreviewImage();
   }
 }
 
-function renderTextOnCanvas(txtX, txtW, totalH) {
+function getImageSubArea(idx, total, imgX, imgY, imgW, imgH) {
+  if (total <= 1) {
+    return { subX: imgX, subY: imgY, subW: imgW, subH: imgH };
+  }
+  const eachH = imgH / total;
+  // For 2 images, stack vertically
+  return {
+    subX: imgX,
+    subY: imgY + idx * eachH,
+    subW: imgW,
+    subH: eachH
+  };
+}
+
+function renderAllTexts(txtX, txtW, totalH) {
+  const count = state.texts.length;
+  if (count === 0) return;
+
   // Fill text area background
   ctx.fillStyle = state.bgColor;
   ctx.fillRect(txtX, 0, txtW, totalH);
 
-  // Parse text from editor
-  const html = textEditor.innerHTML || '';
+  const textAreas = [];
+  if (count === 1) {
+    textAreas.push({ x: txtX, y: 0, w: txtW, h: totalH, textIdx: 0 });
+  } else {
+    const eachH = totalH / count;
+    for (let i = 0; i < count; i++) {
+      textAreas.push({ x: txtX, y: i * eachH, w: txtW, h: eachH, textIdx: i });
+    }
+  }
+
+  for (const area of textAreas) {
+    renderTextOnCanvas(area.textIdx, area.x, area.y, area.w, area.h);
+  }
+}
+
+function renderTextOnCanvas(textIdx, txtX, txtY, txtW, txtH) {
+  const txtData = state.texts[textIdx];
+  if (!txtData) return;
+
   const scale = state.canvasScale;
   const defaultStyle = {
     bold: false,
     italic: false,
     underline: false,
-    color: state.textColor,
-    fontFamily: state.fontFamily,
-    fontSize: state.fontSize,
-    letterSpacing: state.letterSpacing
+    color: txtData.textColor,
+    fontFamily: txtData.fontFamily,
+    fontSize: txtData.fontSize,
+    letterSpacing: txtData.letterSpacing
   };
 
-  const blocks = parseHTML(html, state.textAlign, defaultStyle);
+  const blocks = parseHTML(txtData.html, txtData.textAlign, defaultStyle);
   if (blocks.length === 0) return;
 
-  // Layout constants
   const pad = txtW * 0.06;
   const x = txtX + pad;
   const maxW = txtW - pad * 2;
-  const lineH = state.fontSize * scale * 1.5;
+  const lineH = txtData.fontSize * scale * 1.5;
 
   ctx.save();
   ctx.textBaseline = 'top';
   ctx.textAlign = 'left';
 
-  // First pass: measure text height (dry run, no drawing)
-  let measureY = pad;
+  // Clip to text area
+  ctx.beginPath();
+  ctx.rect(txtX, txtY, txtW, txtH);
+  ctx.clip();
+
+  // Re-fill background for this sub-area
+  ctx.fillStyle = state.bgColor;
+  ctx.fillRect(txtX, txtY, txtW, txtH);
+
+  // First pass: measure text height (dry run)
+  let measureY = txtY + pad;
   for (const block of blocks) {
     measureY = renderBlock(ctx, block, x, measureY, maxW, lineH, block.align, scale, true);
-    if (measureY > totalH * 2) break;
+    if (measureY > txtY + txtH * 2) break;
   }
 
-  // Calculate vertical center offset
-  const textHeight = measureY - pad;
-  const availH = totalH - pad * 2;
-  const yOffset = pad + Math.max(0, (availH - textHeight) / 2);
+  const textHeight = measureY - (txtY + pad);
+  const availH = txtH - pad * 2;
+  const yOffset = txtY + pad + Math.max(0, (availH - textHeight) / 2);
 
-  // Re-fill background (dry run doesn't draw, but keeps state clean)
-  ctx.fillStyle = state.bgColor;
-  ctx.fillRect(txtX, 0, txtW, totalH);
-
-  // Second pass: render at vertically centered position
+  // Second pass: render
   let y = yOffset;
   for (const block of blocks) {
     y = renderBlock(ctx, block, x, y, maxW, lineH, block.align, scale, false);
-    if (y > totalH * 2) break;
+    if (y > txtY + txtH * 2) break;
   }
 
   ctx.restore();
@@ -1473,14 +1918,12 @@ function parseHTML(html, defaultAlign, defaultStyle) {
       const runs = [];
       extractRuns(child, defaultStyle, runs);
       if (runs.length > 0) {
-        // Merge consecutive runs with identical styles
         const merged = [];
         for (const r of runs) {
           const last = merged[merged.length - 1];
           if (last && stylesEqual(last, r) && !r.text.includes('\n')) {
             last.text += r.text;
           } else {
-            // Split on newlines
             const parts = r.text.split('\n');
             for (let i = 0; i < parts.length; i++) {
               if (parts[i]) {
@@ -1515,7 +1958,6 @@ function stylesEqual(a, b) {
 function normalizeColor(color) {
   if (!color) return '#ffffff';
   if (color.startsWith('#')) return color;
-  // Try to parse rgb/rgba
   const m = color.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
   if (m) {
     return '#' + [m[1], m[2], m[3]].map(v => parseInt(v).toString(16).padStart(2, '0')).join('');
@@ -1527,21 +1969,18 @@ function renderBlock(ctx, block, x, y, maxWidth, lineHeight, align, scale, dryRu
   const runs = block.runs;
   if (!runs || runs.length === 0) return y;
 
-  // Build word list
   const words = [];
   for (const run of runs) {
     if (run.break) {
       words.push({ break: true });
       continue;
     }
-    // Split into words (by spaces)
     const parts = run.text.split(/(\s+)/);
     for (const p of parts) {
       if (!p) continue;
       if (/^\s+$/.test(p)) {
         words.push({ text: p, style: run, isSpace: true });
       } else {
-        // Non-space word may have trailing space
         const m = p.match(/^(\S+)(\s+)?/);
         if (m) {
           words.push({ text: m[1], style: run, isSpace: false });
@@ -1553,7 +1992,6 @@ function renderBlock(ctx, block, x, y, maxWidth, lineHeight, align, scale, dryRu
     }
   }
 
-  // If no words, return
   if (words.length === 0) return y;
 
   let lines = [];
@@ -1567,7 +2005,6 @@ function renderBlock(ctx, block, x, y, maxWidth, lineHeight, align, scale, dryRu
         currentLine = [];
         currentW = 0;
       }
-      // Add empty line break
       lines.push([]);
       continue;
     }
@@ -1589,21 +2026,18 @@ function renderBlock(ctx, block, x, y, maxWidth, lineHeight, align, scale, dryRu
     lines.push(currentLine);
   }
 
-  // Dry run: just return total height without drawing
   if (dryRun) {
     const emptyLines = lines.filter(l => l.length === 0).length;
     const textLines = lines.filter(l => l.length > 0).length;
     return y + emptyLines * lineHeight * 0.6 + textLines * lineHeight;
   }
 
-  // Draw each line
   for (const line of lines) {
     if (line.length === 0) {
-      y += lineHeight * 0.6; // Empty line
+      y += lineHeight * 0.6;
       continue;
     }
 
-    // Calculate total line width
     let totalW = 0;
     for (const w of line) {
       ctx.font = buildFontString(w.style, scale);
@@ -1625,7 +2059,6 @@ function renderBlock(ctx, block, x, y, maxWidth, lineHeight, align, scale, dryRu
       const ascent = metrics.fontBoundingBoxAscent || w.style.fontSize * scale * 0.8;
       maxAscent = Math.max(maxAscent, ascent);
 
-      // Apply letter spacing manually
       if (w.style.letterSpacing > 0 && !w.isSpace) {
         const ls = w.style.letterSpacing * scale;
         let cx = penX;
@@ -1640,13 +2073,11 @@ function renderBlock(ctx, block, x, y, maxWidth, lineHeight, align, scale, dryRu
       }
     }
 
-    // Underline (draw across entire line for consistency)
     let anyUnderline = false;
     for (const w of line) {
       if (w.style.underline && !w.isSpace) { anyUnderline = true; break; }
     }
     if (anyUnderline) {
-      // Draw underline under each underlined word
       let ux = startX;
       for (const w of line) {
         ctx.font = buildFontString(w.style, scale);
@@ -1672,6 +2103,38 @@ function buildFontString(style, scale) {
   const italic = style.italic ? 'italic ' : '';
   const bold = style.bold ? 'bold ' : '';
   return `${italic}${bold}${size}px "${family}", sans-serif`;
+}
+
+/* ─── Preview Update ─── */
+function updatePreviewImage() {
+  const preview = $('textPreviewContent');
+  const section = $('textPreviewSection');
+  const header = $('textPreviewHeader');
+  preview.src = canvas.toDataURL('image/png');
+  section.style.background = state.bgColor;
+
+  const firstLoadedImg = state.images.find(img => img.naturalH > 0);
+  if (state.imgHeightMode && firstLoadedImg) {
+    const maxH = Math.min(firstLoadedImg.naturalH, 400);
+    section.style.maxHeight = maxH + 'px';
+    const ar = canvas.width / canvas.height;
+    const headerH = header.offsetHeight || 18;
+    let previewH = Math.max(40, Math.min(maxH, 400));
+    let previewW = previewH * ar;
+    const sectionW = section.clientWidth;
+    if (previewW > sectionW) {
+      previewW = sectionW;
+      previewH = previewW / ar;
+    }
+    preview.style.width = previewW + 'px';
+    preview.style.height = previewH + 'px';
+    section.style.height = (previewH + headerH) + 'px';
+    return;
+  }
+  preview.style.width = '100%';
+  preview.style.height = '180px';
+  section.style.maxHeight = '40%';
+  section.style.height = '180px';
 }
 
 /* ═══════════════════════════════════════
@@ -1729,7 +2192,6 @@ function showToast(msg) {
    START
    ═══════════════════════════════════════ */
 document.addEventListener('DOMContentLoaded', init);
-// Also try init immediately if DOM already loaded
 if (document.readyState === 'complete' || document.readyState === 'interactive') {
   init();
 }
