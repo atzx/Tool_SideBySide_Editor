@@ -2152,10 +2152,11 @@ function updatePreviewImage() {
     section.style.height = (previewH + headerH) + 'px';
     return;
   }
+  const headerH = header.offsetHeight || 18;
   preview.style.width = '100%';
   preview.style.height = '120px';
   section.style.maxHeight = '40%';
-  section.style.height = '120px';
+  section.style.height = (120 + headerH) + 'px';
 }
 
 /* ═══════════════════════════════════════
