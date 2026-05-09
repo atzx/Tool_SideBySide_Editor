@@ -440,6 +440,17 @@ body {
   accent-color: var(--accent);
 }
 .range-value { min-width: 24px; text-align: center; font-size: 11px; }
+.numeric-stepper { display: inline-flex; flex-direction: column; gap: 1px; margin-left: 2px; }
+.numeric-stepper .step-btn {
+  display: flex; align-items: center; justify-content: center;
+  width: 16px; height: 10px; padding: 0;
+  background: var(--btn-bg); color: var(--text);
+  border: 1px solid var(--input-border); border-radius: 2px;
+  cursor: pointer; font-size: 7px; line-height: 1;
+  transition: background .15s;
+}
+.numeric-stepper .step-btn:hover { background: var(--btn-hover); }
+.numeric-stepper .step-btn:active { background: var(--accent); }
 
 /* ─── TEXT EDITORS CONTAINER ─── */
 #textEditorsContainer {
@@ -698,6 +709,10 @@ body {
       <label class="range-label">Size
         <input type="range" id="fontSizeSlider" min="12" max="120" value="32">
         <span class="range-value" id="fontSizeVal">32</span>
+        <span class="numeric-stepper">
+          <button class="step-btn step-up" title="Increase">▲</button>
+          <button class="step-btn step-down" title="Decrease">▼</button>
+        </span>
       </label>
       <label class="range-label">Space
         <input type="range" id="letterSpacingSlider" min="0" max="20" value="0" step="0.5">
@@ -1476,6 +1491,25 @@ function bindEvents() {
     scheduleRender();
   });
   fontSizeSlider.addEventListener('change', () => { pushSnapshot(); updateUndoButtons(); });
+
+  // ─── Font Size Stepper ───
+  document.querySelector('.step-up')?.addEventListener('click', () => stepFontSize(1));
+  document.querySelector('.step-down')?.addEventListener('click', () => stepFontSize(-1));
+
+  function stepFontSize(delta) {
+    const idx = state.activeTextIdx;
+    const newVal = Math.min(120, Math.max(12, state.texts[idx].fontSize + delta));
+    if (newVal === state.texts[idx].fontSize) return;
+    state.texts[idx].fontSize = newVal;
+    fontSizeSlider.value = newVal;
+    fontSizeVal.textContent = newVal;
+    const editor = getTextEditor(idx);
+    if (editor) {
+      applyFontSizeToEditor(editor, newVal);
+      adjustTextVerticalCenter(editor);
+    }
+    snapshotAndRender();
+  }
 
   letterSpacingSlider.addEventListener('input', () => {
     const idx = state.activeTextIdx;
