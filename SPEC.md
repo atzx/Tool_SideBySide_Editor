@@ -109,7 +109,7 @@ A single-page HTML application for composing images with overlaid text side-by-s
   1. Fill canvas with theme background color.
   2. Fill the image side — if 2 images, split the image area vertically and render each image independently with its own zoom/rotation/fit-fill.
   3. Fill the text side — if 2 texts, split the text area vertically and render each text block independently with its own font/size/alignment/color.
-  4. Parse each contenteditable's innerHTML into styled text runs (bold, italic, underline, color, font family, font size, letter spacing).
+  4. Parse each contenteditable's innerHTML into styled text runs (bold, italic, underline, color, font family, font size, letter spacing). Contenteditable Enter presses produce nested `<div>` elements and `<br>` tags — the parser (`extractRuns`) detects block-within-block structures and inserts `{break: true}` markers between lines, and processes `<br>` as forced breaks. The merge logic preserves these markers so text from separate lines is not merged into a single run.
   5. Draw text runs on canvas using `CanvasRenderingContext2D.fillText()` with word-wrap and alignment.
   6. Panel split ratio matches the divider position from the editing view.
   7. Panel order (normal/inverted) is preserved in the output.
