@@ -1878,7 +1878,7 @@ function parseHTML(html, defaultAlign, defaultStyle) {
 
   const blocks = [];
 
-  function extractRuns(node, inherited, runs) {
+  function extractRuns(node, inherited, runs, skipBr) {
     if (node.nodeType === Node.TEXT_NODE) {
       if (node.textContent) {
         runs.push({ text: node.textContent, ...inherited });
@@ -1902,8 +1902,28 @@ function parseHTML(html, defaultAlign, defaultStyle) {
     const styleFont = node.style && node.style.fontFamily;
     if (styleFont) s.fontFamily = styleFont;
 
-    for (const child of node.childNodes) {
-      extractRuns(child, s, runs);
+    if (tag === 'br' && !skipBr) {
+      runs.push({ break: true });
+      return;
+    }
+
+    const children = Array.from(node.childNodes);
+    // contenteditable wraps each Enter-pressed line in a <div> or <p>.
+    // Detect a block element whose children are all block elements (each = a line).
+    const isBlockWithBlocks = (tag === 'div' || tag === 'p') &&
+      children.length > 1 &&
+      children.every(c => c.nodeType === Node.ELEMENT_NODE &&
+        (c.tagName === 'DIV' || c.tagName === 'P'));
+
+    if (isBlockWithBlocks) {
+      for (let i = 0; i < children.length; i++) {
+        if (i > 0) runs.push({ break: true });
+        extractRuns(children[i], s, runs, true);
+      }
+    } else {
+      for (const child of children) {
+        extractRuns(child, s, runs, false);
+      }
     }
   }
 
@@ -1920,8 +1940,9 @@ function parseHTML(html, defaultAlign, defaultStyle) {
       if (runs.length > 0) {
         const merged = [];
         for (const r of runs) {
+          if (r.break) { merged.push(r); continue; }
           const last = merged[merged.length - 1];
-          if (last && stylesEqual(last, r) && !r.text.includes('\n')) {
+          if (last && !last.break && stylesEqual(last, r) && !r.text.includes('\n')) {
             last.text += r.text;
           } else {
             const parts = r.text.split('\n');
@@ -2132,9 +2153,9 @@ function updatePreviewImage() {
     return;
   }
   preview.style.width = '100%';
-  preview.style.height = '180px';
+  preview.style.height = '160px';
   section.style.maxHeight = '40%';
-  section.style.height = '180px';
+  section.style.height = '160px';
 }
 
 /* ═══════════════════════════════════════
