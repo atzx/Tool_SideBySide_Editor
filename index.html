@@ -298,6 +298,24 @@ body {
 }
 .drop-zone:hover .paste-hint { opacity: 0.6; }
 
+.img-title-overlay {
+  position: absolute;
+  top: 12px; right: 12px;
+  font-size: 20px;
+  font-weight: 700;
+  color: #fff;
+  -webkit-text-stroke: 1.5px #000;
+  text-shadow: 0 0 4px rgba(0,0,0,0.5);
+  pointer-events: none;
+  z-index: 2;
+  max-width: 70%;
+  text-align: right;
+  line-height: 1.2;
+  word-break: break-word;
+  display: none;
+}
+.drop-zone.has-image .img-title-overlay { display: block; }
+
 /* ─── ACTIVE INDICATOR ─── */
 .active-indicator {
   font-size: 11px;
@@ -350,6 +368,27 @@ body {
 .fit-switch span { font-size: 12px; color: var(--text-dim); cursor: pointer; padding: 2px 6px; border-radius: 4px; transition: all .15s; }
 .fit-switch span.active { color: var(--text); background: var(--accent); }
 .rotate-group { display: flex; gap: 2px; }
+.img-title-label {
+  display: flex !important;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+.img-title-label input[type="text"] {
+  width: 130px;
+  background: var(--input-bg);
+  color: var(--text);
+  border: 1px solid var(--input-border);
+  border-radius: 4px;
+  padding: 3px 6px;
+  font-size: 12px;
+  outline: none;
+}
+.img-title-label input[type="text"]:focus {
+  border-color: var(--accent);
+}
 
 /* ─── TEXT TOOLBAR ─── */
 #toolbar {
@@ -679,6 +718,9 @@ body {
         <span id="fitOpt" class="active">Fit</span>
         <span id="fillOpt">Fill</span>
       </div>
+      <label class="img-title-label">Title
+        <input type="text" id="imgTitleInput" placeholder="Add image title..." maxlength="100">
+      </label>
     </div>
   </div>
 
@@ -775,7 +817,7 @@ const FONTS = [
    STATE
    ═══════════════════════════════════════ */
 function makeDefaultImage() {
-  return { dataUrl: null, zoom: 100, rotation: 0, fitFill: 'fit', naturalW: 0, naturalH: 0 };
+  return { dataUrl: null, zoom: 100, rotation: 0, fitFill: 'fit', naturalW: 0, naturalH: 0, title: '' };
 }
 function makeDefaultText() {
   return {
@@ -1011,6 +1053,7 @@ function buildDropZones() {
           <p class="sub">or paste from clipboard (Ctrl+V)</p>
         </div>
         <img class="image-preview" alt="Preview" crossorigin="anonymous" data-index="${i}">
+        <div class="img-title-overlay" data-index="${i}">${img.title || ''}</div>
         <div class="paste-hint">Ctrl+V to paste image</div>
       </div>`;
     dropZonesContainer.appendChild(wrapper);
@@ -1174,6 +1217,8 @@ function syncImageToolsFromState() {
   if (img.fitFill === 'fit') { fitOpt.classList.add('active'); fillOpt.classList.remove('active'); }
   else { fillOpt.classList.add('active'); fitOpt.classList.remove('active'); }
   activeImgIndicator.textContent = state.images.length > 1 ? `Image ${state.activeImageIdx + 1}` : '';
+  const titleInput = $('imgTitleInput');
+  if (titleInput) titleInput.value = img.title || '';
 }
 
 function syncTextToolsFromState() {
@@ -1428,6 +1473,19 @@ function bindEvents() {
     updateImageTransform();
     snapshotAndRender();
   });
+
+  // ─── Image Title ───
+  const imgTitleInput = $('imgTitleInput');
+  if (imgTitleInput) {
+    imgTitleInput.addEventListener('input', () => {
+      const idx = state.activeImageIdx;
+      state.images[idx].title = imgTitleInput.value;
+      const overlay = document.querySelector(`.img-title-overlay[data-index="${idx}"]`);
+      if (overlay) overlay.textContent = imgTitleInput.value;
+      debouncedSnapshot();
+      scheduleRender();
+    });
+  }
 
   // ─── Text Formatting (applies to active editor) ───
   boldBtn.addEventListener('click', () => execOnActive('bold'));
@@ -1769,6 +1827,24 @@ function doRender() {
 
         ctx.drawImage(img, dx, dy, dw, dh);
         ctx.restore();
+
+        // Draw image title overlay (top-right)
+        if (imgData.title) {
+          const titleSize = Math.max(16, Math.min(subW * 0.04, 36)) * scale;
+          ctx.save();
+          ctx.font = `bold ${titleSize}px Inter, sans-serif`;
+          ctx.textAlign = 'right';
+          ctx.textBaseline = 'top';
+          const tx = subX + subW - 12 * scale;
+          const ty = subY + 12 * scale;
+          ctx.strokeStyle = '#000';
+          ctx.lineWidth = 3 * scale;
+          ctx.lineJoin = 'round';
+          ctx.strokeText(imgData.title, tx, ty);
+          ctx.fillStyle = '#fff';
+          ctx.fillText(imgData.title, tx, ty);
+          ctx.restore();
+        }
 
         loadedCount++;
         if (loadedCount === totalImages) {
