@@ -804,8 +804,8 @@ body {
   <div class="toolbar-sep"></div>
   <div class="export-group">
     <button id="downloadWebP" data-format="webp" class="active">WebP</button>
-    <button id="downloadJPG" data-format="jpeg">JPG</button>
     <button id="downloadPNG" data-format="png">PNG</button>
+    <button id="downloadJPG" data-format="jpeg">JPG</button>
     <button id="copyImage">📋 Copy</button>
   </div>
 </footer>
@@ -1224,6 +1224,11 @@ function syncUIFromState() {
   // Image Height mode
   requestAnimationFrame(() => {
     document.querySelectorAll('.text-editor').forEach(ed => adjustTextVerticalCenter(ed));
+  });
+
+  // Download format
+  document.querySelectorAll('.export-group button[data-format]').forEach(b => {
+    b.classList.toggle('active', b.dataset.format === state.downloadFormat);
   });
 }
 
