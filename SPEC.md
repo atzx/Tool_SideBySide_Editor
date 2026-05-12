@@ -27,16 +27,21 @@ A single-page HTML application for composing images with overlaid text side-by-s
 - **Canvas Scale**: fixed at 2× (no slider — removed). Multiplies the base resolution for high-resolution output.
 
 ### 1.4 Layout Configuration (Config GUI)
-- **Config GUI button** in the top bar opens a dropdown with 4 layout presets:
+- **Config GUI button** in the top bar opens a dropdown with 7 layout presets:
   - **1 Image + 1 Text** (default): single drop zone, single text editor.
   - **1 Image + 2 Texts**: single drop zone, two text editors stacked vertically.
   - **2 Images + 1 Text**: two drop zones stacked vertically, single text editor.
   - **2 Images + 2 Texts**: two drop zones, two text editors, all stacked vertically.
+  - **3 Images + 1 Text**: three drop zones stacked vertically, single text editor.
+  - **4 Images + 1 Text**: four drop zones stacked vertically, single text editor.
+  - **5 Images + 1 Text**: five drop zones stacked vertically, single text editor.
+- Config string format `{n}i{m}t` (e.g. `3i1t` = 3 images + 1 text). Parsed generically so any combination works without hardcoded conditionals.
 - Each option shows a visual icon (◻ / ◻◻ / T / T|T) and a checkmark for the active selection.
 - Switching configs preserves data in slots that remain (e.g., 2→1 images keeps the first image).
 - Layout rebuilding is handled by `rebuildLayout()` → `buildDropZones()` / `buildTextEditors()`.
 - Active element tracking: clicking a drop zone makes it active (red border); focusing a text editor makes it active. Toolbar controls apply to the active element.
 - Active indicators ("Image 1", "Text 2") shown in the toolbar when 2+ elements exist.
+- All drop zones stack vertically (via `getImageSubArea` which divides height by image count), working for any number of images.
 
 ### 1.5 Inline Preview
 - The rendered canvas output (image left + text right) is always visible in a **Preview section** at the bottom of the left panel.
@@ -68,7 +73,17 @@ A single-page HTML application for composing images with overlaid text side-by-s
 - Shows the loaded image preview once dropped/pasted/selected.
 - Active drop zone is highlighted with a red inset border (`.active-zone`).
 
-### 2.4 Preview Section
+### 2.4 Image Title Overlay
+- A **Title** text input in the image tools toolbar lets the user set a per-image title.
+- Each image has its own `title` field in `state.images[]`.
+- The title is rendered as an overlay at the **top-right corner** of each image preview (`.img-title-overlay`) with:
+  - White text color (`#fff`)
+  - Black stroke (`-webkit-text-stroke: 1.5px #000`) and `text-shadow` for readability.
+- On the exported canvas, the title is drawn via `ctx.fillText()` and `ctx.strokeText()` with proportional font size.
+- The title input syncs with the active image: switching active drop zones updates the input value.
+- Up to 100 characters per title, enforced via `maxlength`.
+
+### 2.5 Preview Section
 - Below the drop zone, a `#textPreviewSection` container shows the rendered canvas output as an `<img>` element.
 - **Header**: "Preview" label.
 - **Dynamic sizing**: `updatePreviewImage()` captures the image's displayed height via `getBoundingClientRect()`, sets explicit width/height on the preview img, and adjusts the section height (img height + header height). A `requestAnimationFrame` stabilization pass re-adjusts after layout settles.
@@ -92,7 +107,7 @@ A single-page HTML application for composing images with overlaid text side-by-s
 - **Background color**: `<input type="color">` that sets the right panel's background (shared across all editors).
 - **Active text indicator**: When 2 text editors exist, the toolbar shows "Text 1" / "Text 2" label. Focusing an editor makes it active.
 - **Google Fonts selector**: A `<select>` populated with ~20 popular Google Fonts. The selected font applies to all text via CSS (`font-family` on the editor div), not via `execCommand('fontName')`.
-- **Font size**: Range slider (12px – 120px).
+- **Font size**: Range slider (12px – 120px, 200px wide) with a **numeric stepper** (▲/▼ buttons) beside the value display for ±1px precision. The stepper calls `stepFontSize(delta)` which clamps between min/max, syncs slider + display + editor, and triggers snapshot+render.
 - **Letter spacing**: Range slider (0px – 20px).
 
 ### 3.3 Google Fonts
@@ -119,10 +134,18 @@ A single-page HTML application for composing images with overlaid text side-by-s
 - **IMG-Height mode**: canvas height = first loaded image's natural height; width recalculated to maintain aspect ratio.
 
 ### 4.2 Export Buttons
-- **Download WebP**: `canvas.toBlob(blob => ... , 'image/webP', 0.95)`
-- **Download JPG**: `canvas.toBlob(blob => ... , 'image/jpeg', 0.95)`
-- **Download PNG**: `canvas.toBlob(blob => ... , 'image/png')`
-- **Copy to clipboard**: `canvas.toBlob(blob => navigator.clipboard.write([new ClipboardItem({[blob.type]: blob})]))`
+- Buttons rendered as a toggle group inside `.export-group`, each with a `data-format` attribute.
+- **Active format** is tracked in `state.downloadFormat` (default `'webp'`). On state sync, `syncUIFromState()` applies `.active` class to the matching button.
+- Clicking any format button:
+  1. Updates `state.downloadFormat`.
+  2. Toggles `.active` class visually.
+  3. Calls `exportImage(format)` immediately.
+- Button order: **WebP** (default active), **PNG**, **JPG**.
+- Export uses `canvas.toBlob(blob => ... , mime, 0.95)`:
+  - WebP → `'image/webp'` at 0.95 quality
+  - JPG → `'image/jpeg'` at 0.95 quality
+  - PNG → `'image/png'` (lossless, quality ignored)
+- **Copy to clipboard**: `canvas.toBlob(blob => navigator.clipboard.write([new ClipboardItem({[blob.type]: blob})]))`, always exports as PNG.
 
 ---
 
@@ -130,9 +153,10 @@ A single-page HTML application for composing images with overlaid text side-by-s
 
 ### 5.1 State Snapshots
 - On every meaningful edit (image loaded, zoom changed, rotation changed, text edited, font changed, colors changed, alignment changed, ratio changed, panels inverted, IMG-Height toggled, config changed), push the current configuration to an undo stack.
-- Each snapshot is a plain object: `{ config, images[], texts[], activeImageIdx, activeTextIdx, bgColor, aspectRatio, customWidth, customHeight, panelOrder, leftPanelPct, canvasScale, imgHeightMode }`.
-- `images` is an array of `{ dataUrl, zoom, rotation, fitFill, naturalW, naturalH }` (1 or 2 items depending on config).
-- `texts` is an array of `{ html, fontFamily, fontSize, letterSpacing, textColor, textAlign }` (1 or 2 items depending on config).
+- Each snapshot is a plain object: `{ config, images[], texts[], activeImageIdx, activeTextIdx, bgColor, aspectRatio, customWidth, customHeight, panelOrder, leftPanelPct, canvasScale, imgHeightMode, theme }`.
+- `images` is an array of `{ dataUrl, zoom, rotation, fitFill, naturalW, naturalH, title }` (1–5 items depending on config, only title changes are non-visual).
+- `texts` is an array of `{ html, fontFamily, fontSize, letterSpacing, textColor, textAlign }` (1–2 items depending on config).
+- `downloadFormat` is tracked in `state` but NOT included in snapshots — it is a UI preference that should persist across undo/redo.
 
 ### 5.2 Undo / Redo Stacks
 - Maximum 50 entries per stack.
@@ -186,10 +210,11 @@ A single-page HTML application for composing images with overlaid text side-by-s
 - When **IMG-Height** is active, canvas height is set to the first loaded image's natural height; width is recalculated to maintain the selected aspect ratio.
 
 ### 8.3 Image Rendering on Canvas
-- If 2 images in config, the image panel area is split vertically into equal halves via `getImageSubArea()`. Each image renders in its own sub-rectangle.
+- Images are split vertically into equal sub-rectangles via `getImageSubArea()` (works for any count 1–5). Each image renders in its own sub-rectangle.
 - Empty drop zones render a "No image loaded" placeholder.
 - Apply rotation via `ctx.rotate()` around each sub-area center.
 - `fit` vs `fill` maps to `contain` vs `cover` logic when computing destination rect for each image independently.
+- After each image is drawn, its **title** is rendered at the top-right corner of the sub-area using `ctx.strokeText()` (black stroke, `lineWidth: 3 * scale`) and `ctx.fillText()` (white fill). Font size scales proportionally (`max(16, min(subW * 0.04, 36)) * scale`).
 
 ### 8.4 Inline Preview (multi-image aware)
 - The old preview toggle mode (button + keyboard shortcut) was removed.
