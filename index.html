@@ -608,12 +608,12 @@ body {
   display: flex; gap: 4px;
   margin-left: auto;
 }
-.export-group button.primary {
+.export-group button.active {
   background: var(--accent);
   color: #fff;
   border-color: var(--accent);
 }
-.export-group button.primary:hover { opacity: .85; background: var(--accent); }
+.export-group button.active:hover { opacity: .85; background: var(--accent); }
 
 #invertBtn {
   font-size: 16px !important;
@@ -803,9 +803,9 @@ body {
   <button id="invertBtn" title="Swap Panel Order">⇄ Swap</button>
   <div class="toolbar-sep"></div>
   <div class="export-group">
-    <button id="downloadWebP" class="primary">WebP</button>
-    <button id="downloadJPG">JPG</button>
-    <button id="downloadPNG">PNG</button>
+    <button id="downloadWebP" data-format="webp" class="active">WebP</button>
+    <button id="downloadJPG" data-format="jpeg">JPG</button>
+    <button id="downloadPNG" data-format="png">PNG</button>
     <button id="copyImage">📋 Copy</button>
   </div>
 </footer>
@@ -859,7 +859,8 @@ const state = {
   leftPanelPct: 50,
   canvasScale: 2,
   imgHeightMode: true,
-  theme: 'dark'
+  theme: 'dark',
+  downloadFormat: 'webp'
 };
 
 /* ═══════════════════════════════════════
@@ -1639,9 +1640,14 @@ function bindEvents() {
   });
 
   // ─── Export ───
-  $('downloadWebP').addEventListener('click', () => exportImage('webp'));
-  $('downloadJPG').addEventListener('click', () => exportImage('jpeg'));
-  $('downloadPNG').addEventListener('click', () => exportImage('png'));
+  document.querySelectorAll('.export-group button[data-format]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.downloadFormat = btn.dataset.format;
+      document.querySelectorAll('.export-group button[data-format]').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      exportImage(state.downloadFormat);
+    });
+  });
   $('copyImage').addEventListener('click', copyToClipboard);
 }
 
